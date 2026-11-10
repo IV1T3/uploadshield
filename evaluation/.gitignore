@@ -1,0 +1,8 @@
+# Generated evaluation artifacts: never committed (the corpus is hundreds of MB) and
+# never published. The harness code in this directory IS committed.
+corpus/
+results/
+summary*.json
+report*.html
+*.log
+__pycache__/

@@ -77,9 +77,10 @@ build-backend = "uv_build"
 
 [tool.uv.build-backend]
 module-name = "uploadshield"
-# macOS Finder metadata must never ship inside the package.
-source-exclude = ["**/.DS_Store"]
-wheel-exclude = ["**/.DS_Store"]
+# macOS Finder metadata must never ship inside the package, and the maintainer-only
+# evaluation harness is never published (it is versioned in git but out of the wheel/sdist).
+source-exclude = ["**/.DS_Store", "evaluation", "evaluation/**"]
+wheel-exclude = ["**/.DS_Store", "evaluation", "evaluation/**"]
 
 # --------------------------------------------------------------------------- #
 # Ruff
@@ -88,7 +89,8 @@ wheel-exclude = ["**/.DS_Store"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
-extend-exclude = ["**/migrations/**"]
+# evaluation/ is maintainer-only tooling with its own conventions, not library code.
+extend-exclude = ["**/migrations/**", "evaluation"]
 
 [tool.ruff.lint]
 select = [
