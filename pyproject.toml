@@ -25,21 +25,29 @@ classifiers = [
 # The engine is pure Python with no required dependencies; pick your framework extra.
 dependencies = []
 
+# Framework floors stay at the oldest release line we support; the non-framework floors
+# are raised to exclude versions with known upload-relevant advisories (the fix still
+# runs on Python 3.11, so this costs no compatibility). See docs/development.md.
 [project.optional-dependencies]
-django = ["django>=4.2"]
-flask = ["flask>=2.3"]
-fastapi = ["fastapi>=0.110", "python-multipart>=0.0.9"]
-images = ["pillow>=10.0"]
+django = ["django>=4.2"]  # 4.2 LTS; run a currently-supported patch release
+# werkzeug is imported directly by the Flask adapter; >=2.3.8 drops CVE-2023-46136.
+flask = ["flask>=2.3.2", "werkzeug>=2.3.8"]
+# 0.115.4 is the first FastAPI that pins starlette>=0.40 (CVE-2024-47874 multipart DoS);
+# python-multipart>=0.0.18 drops CVE-2024-53981 (multipart DoS).
+fastapi = ["fastapi>=0.115.4", "python-multipart>=0.0.18"]
+# 11.0 excludes the 10.x line (CVE-2023-50447 arbitrary code, CVE-2024-28219 overflow).
+images = ["pillow>=11.0"]
 yara = ["yara-python>=4.3"]
 magic = ["python-magic>=0.4.27"]
 # Google Magika (ML second opinion); its onnxruntime has no Python 3.15 wheels yet.
 magika = ["magika>=1.0; python_version < '3.15'"]
 all = [
     "django>=4.2",
-    "flask>=2.3",
-    "fastapi>=0.110",
-    "python-multipart>=0.0.9",
-    "pillow>=10.0",
+    "flask>=2.3.2",
+    "werkzeug>=2.3.8",
+    "fastapi>=0.115.4",
+    "python-multipart>=0.0.18",
+    "pillow>=11.0",
     "yara-python>=4.3",
     "python-magic>=0.4.27",
     "magika>=1.0; python_version < '3.15'",
@@ -65,7 +73,7 @@ dev = [
     "djangorestframework>=3.18.3",
     "flask>=3.1",
     "flask-wtf>=1.2",
-    "fastapi>=0.115",
+    "fastapi>=0.115.4",
     "httpx2>=2.16",
     "python-multipart>=0.0.20",
     "magika>=1.0 ; python_full_version < '3.15'",

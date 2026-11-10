@@ -17,6 +17,44 @@ versions without wheels for them (yara-python and onnxruntime lag behind new Pyt
 releases), install the extras you can instead:
 `uv run --extra django --extra flask --extra fastapi --extra images pytest`.
 
+## Supported versions and dependency floors
+
+uploadshield supports Python 3.11+ and, for the framework extras, the oldest release
+line each framework still patches: Django 4.2 LTS, Flask 2.3, and the FastAPI line.
+Those **framework** floors stay low on purpose — raising a minor floor buys little, since
+resolvers install the newest compatible patch anyway.
+
+The **non-framework** floors are set higher, to the first release that is free of a known
+upload-relevant advisory, chosen so the floor version still runs on Python 3.11 (so the
+higher floor costs no compatibility):
+
+- `python-multipart>=0.0.18` — CVE-2024-53981 (multipart denial of service).
+- `fastapi>=0.115.4` — the first FastAPI that requires `starlette>=0.40`, which fixes
+  CVE-2024-47874 (multipart denial of service).
+- `pillow>=11.0` — excludes the 10.x line (CVE-2023-50447 arbitrary code execution via
+  `ImageMath.eval`, CVE-2024-28219 buffer overflow).
+- `werkzeug>=2.3.8` (declared because the Flask adapter imports it directly) — CVE-2023-46136
+  (multipart denial of service).
+- `flask>=2.3.2` — CVE-2023-30861 (session-cookie caching).
+
+A floor is the minimum we vouch for, not the installed version: a normal install on a
+current Python resolves to the newest compatible release (see `uv.lock`). The advisories
+above were checked against the [OSV](https://osv.dev) database.
+
+### The version matrix
+
+Run after any change, especially to the floors or engine:
+
+- **Oldest stack** — a separate Python 3.11 environment pinned to the floors:
+  `django==4.2.*`, `flask==2.3.2`, `werkzeug==2.3.8`, `fastapi==0.115.4`,
+  `python-multipart==0.0.18`, `pillow==11.0.*`, plus `djangorestframework==3.15.*`,
+  `flask-wtf==1.2.*`, `wtforms<3.2`, `httpx<0.28`, `anyio<4` for the test client (Starlette
+  0.41's `TestClient` otherwise trips anyio 4's deprecation warnings under `-W error`), and
+  `pytest`/`pytest-django`/`hypothesis`. Install the project with `--no-deps` on top.
+- **Newest** — Python 3.14 and 3.15 with `--extra django --extra flask --extra fastapi
+  --extra images --extra magika` (not `--all-extras`: yara-python and onnxruntime lag the
+  newest interpreters).
+
 ## The test suite
 
 The tests are organised by what they cover, and marked the same way

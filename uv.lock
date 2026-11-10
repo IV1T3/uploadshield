@@ -1357,6 +1357,7 @@ all = [
     { name = "pillow" },
     { name = "python-magic" },
     { name = "python-multipart" },
+    { name = "werkzeug" },
     { name = "yara-python" },
 ]
 django = [
@@ -1369,6 +1370,7 @@ fastapi = [
 ]
 flask = [
     { name = "flask" },
+    { name = "werkzeug" },
 ]
 images = [
     { name = "pillow" },
@@ -1405,18 +1407,20 @@ dev = [
 requires-dist = [
     { name = "django", marker = "extra == 'all'", specifier = ">=4.2" },
     { name = "django", marker = "extra == 'django'", specifier = ">=4.2" },
-    { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.110" },
-    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.110" },
-    { name = "flask", marker = "extra == 'all'", specifier = ">=2.3" },
-    { name = "flask", marker = "extra == 'flask'", specifier = ">=2.3" },
+    { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.115.4" },
+    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.115.4" },
+    { name = "flask", marker = "extra == 'all'", specifier = ">=2.3.2" },
+    { name = "flask", marker = "extra == 'flask'", specifier = ">=2.3.2" },
     { name = "magika", marker = "python_full_version < '3.15' and extra == 'all'", specifier = ">=1.0" },
     { name = "magika", marker = "python_full_version < '3.15' and extra == 'magika'", specifier = ">=1.0" },
-    { name = "pillow", marker = "extra == 'all'", specifier = ">=10.0" },
-    { name = "pillow", marker = "extra == 'images'", specifier = ">=10.0" },
+    { name = "pillow", marker = "extra == 'all'", specifier = ">=11.0" },
+    { name = "pillow", marker = "extra == 'images'", specifier = ">=11.0" },
     { name = "python-magic", marker = "extra == 'all'", specifier = ">=0.4.27" },
     { name = "python-magic", marker = "extra == 'magic'", specifier = ">=0.4.27" },
-    { name = "python-multipart", marker = "extra == 'all'", specifier = ">=0.0.9" },
-    { name = "python-multipart", marker = "extra == 'fastapi'", specifier = ">=0.0.9" },
+    { name = "python-multipart", marker = "extra == 'all'", specifier = ">=0.0.18" },
+    { name = "python-multipart", marker = "extra == 'fastapi'", specifier = ">=0.0.18" },
+    { name = "werkzeug", marker = "extra == 'all'", specifier = ">=2.3.8" },
+    { name = "werkzeug", marker = "extra == 'flask'", specifier = ">=2.3.8" },
     { name = "yara-python", marker = "extra == 'all'", specifier = ">=4.3" },
     { name = "yara-python", marker = "extra == 'yara'", specifier = ">=4.3" },
 ]
@@ -1426,7 +1430,7 @@ provides-extras = ["django", "flask", "fastapi", "images", "yara", "magic", "mag
 dev = [
     { name = "django-stubs", specifier = ">=5.2" },
     { name = "djangorestframework", specifier = ">=3.18.3" },
-    { name = "fastapi", specifier = ">=0.115" },
+    { name = "fastapi", specifier = ">=0.115.4" },
     { name = "flask", specifier = ">=3.1" },
     { name = "flask-wtf", specifier = ">=1.2" },
     { name = "httpx2", specifier = ">=2.16" },
