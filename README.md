@@ -1,5 +1,11 @@
 # uploadshield
 
+[![PyPI](https://img.shields.io/pypi/v/uploadshield)](https://pypi.org/project/uploadshield/)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://pypi.org/project/uploadshield/)
+[![License](https://img.shields.io/pypi/l/uploadshield)](https://github.com/IV1T3/uploadshield/blob/main/LICENSE)
+[![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)](https://github.com/IV1T3/uploadshield#add-it-to-your-app)
+[![OWASP](https://img.shields.io/badge/OWASP-cheat%20sheet%20mapped-000000?logo=owasp)](https://github.com/IV1T3/uploadshield/blob/main/docs/OWASP.md)
+
 Content-aware validation and sanitization of file uploads for Django, Flask and FastAPI.
 
 Web frameworks hand you the filename and `Content-Type` of an upload as if they were
