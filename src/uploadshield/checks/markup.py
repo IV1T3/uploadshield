@@ -34,7 +34,7 @@ _SVG_RULES: dict[str, re.Pattern[str]] = {
     # "/" first, so "url(http:\\e)" reads like "url(http://e)".
     "external resource": re.compile(
         r"@import\b"
-        r"|(?:href\s*=|url\()\s*[\"']?\s*(?!data:)(?:[a-z][a-z0-9+.-]*:|//)"
+        r"|(?:href\s*=|url\()\s*[\"']?\s*(?!data:)(?:[a-z][a-z0-9+.-]*:|[/\\]{2})"
     ),
     "handler element": re.compile(r"<\s*(?:[a-z0-9_-]+:)?handler\b"),
     "CSS expression": re.compile(r"expression\s*\("),
@@ -84,9 +84,10 @@ def _decode_markup(data: bytes) -> str:
 
 def _normalize_markup(text: str) -> str:
     # Browsers decode character references and ignore tabs/newlines inside URLs, so
-    # "&#106;ava&#x09;script:" must be seen as "javascript:".  This view keeps ALL of the
-    # markup; it never drops content, so a marker is never hidden from the scan.
-    return _URL_INVISIBLES.sub("", html.unescape(text)).lower()
+    # "&#106;ava&#x09;script:" must be seen as "javascript:".  They also read "\" as "/"
+    # in URLs, so href="\\evil/x" is the scheme-relative "//evil/x".  This view keeps ALL
+    # of the markup; it never drops content, so a marker is never hidden from the scan.
+    return _URL_INVISIBLES.sub("", html.unescape(text)).replace("\\", "/").lower()
 
 
 def _normalize_css(text: str) -> str:

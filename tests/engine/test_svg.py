@@ -45,6 +45,11 @@ SVG_POLICY = Policy(allowed_types={"image/svg+xml"})
         "<style>rect{background:url(ftp://evil.example/a)}</style>",
         r"<style>rect{background:url(http:\\evil.example\a)}</style>",
         '<a href="vbscript:msgbox(1)"><rect width="9" height="9"/></a>',
+        # Third review round (2026-11-10): browsers read "\" as "/" in URLs, so a
+        # backslash scheme-relative href/url in a plain attribute is still external.
+        r'<a href="\\evil.example/x"><rect width="9" height="9"/></a>',
+        r'<image href="\/evil.example/x"/>',
+        r"<style>rect{background:url(\\evil.example/a)}</style>",
     ],
 )
 def test_svg_active_content(body: str) -> None:
@@ -95,6 +100,8 @@ def test_event_handlers_after_tricky_attributes(svg: bytes) -> None:
         '<use href="#gradient"/><rect fill="url(#gradient)"/>',
         '<image href="photo.png"/>',
         "<style>/* a theme comment */ rect{fill:blue}</style>",
+        # A backslash in text (not an href/url value) is not an external resource.
+        r"<text>a path like C:\users\shared\logo is just text</text>",
     ],
 )
 def test_text_and_attribute_values_mentioning_on_are_fine(body: str) -> None:
