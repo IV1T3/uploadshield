@@ -138,9 +138,9 @@ What failing closed does **not** cover, because nothing is inspected:
 - A check whose optional dependency is missing does nothing: without Pillow
   (`uv add "uploadshield[images]"`) images are not decoded, and AVIF and HEIC also need
   Pillow's plugins. Django's system checks and the command line warn about this.
-- Archives other than ZIP (gzip, tar, bzip2, xz, 7-Zip, RAR) are detected but not
-  opened; no preset allows them.
-- The contents of ZIP members are not validated against a policy; only their names,
+- 7-Zip and RAR archives are detected but not opened; wildcards never match them and
+  no preset allows them. ZIP and tar archives (plain, gzip, bzip2, xz) are opened.
+- The contents of archive members are not validated against a policy; only their names,
   sizes and paths are.
 - `ClamAV(fail_open=True)` accepts files when the scanner is down.
 

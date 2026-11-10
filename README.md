@@ -25,7 +25,7 @@ uploads/
   ✗ avatar.png  PHP script · 30 bytes
       type_not_allowed  PHP script files are not allowed.
       embedded_code  The file contains embedded code.  <?php
-  ? backup.tar.gz  gzip archive · 132 bytes
+  ? backup.7z  7-Zip archive · 187 bytes
       type_not_allowed  Its contents cannot be inspected: unpack it and scan the files, or add --clamav.
   ! holiday.png  JPEG image · 14.6 KB
       extension_mismatch  The file extension '.png' does not match its content (JPEG image).
@@ -48,8 +48,8 @@ refuses a file. See the [command line guide](docs/cli.md).
   bidi-override tricks, and their percent-encoded and fullwidth variants.
 - **Active documents**: PDFs with JavaScript or embedded files, Office files with
   macros, DDE fields or remote templates, SVGs with scripts, XML with entity bombs.
-- **Archive attacks**: ZIP bombs, zip slip, symbolic links, deeply nested archives,
-  and members a server would run once extracted.
+- **Archive attacks** in ZIP and tar (`.tar.gz`, `.tar.bz2`, `.tar.xz`): bombs, zip
+  slip, links, deeply nested archives, and members a server would run once extracted.
 - **Hidden payloads**: PHP in image metadata, polyglots such as GIFAR, CSV cells that
   run commands through DDE (`=cmd|' /C calc'!A0`).
 - **Malware**, with ClamAV or your own YARA rules, and optionally Google's Magika model

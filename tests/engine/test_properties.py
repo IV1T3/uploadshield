@@ -32,6 +32,9 @@ SIGNATURES = [
     b"\xff\xfe",
     b"BM",
     b"\x00\x00\x01\x00",
+    b"\x1f\x8b\x08",
+    b"BZh9",
+    b"\xfd7zXZ\x00",
 ]
 REAL_FILES = [
     corpus.png(),
@@ -40,6 +43,9 @@ REAL_FILES = [
     corpus.ooxml("docx"),
     corpus.animated_gif(),
     corpus.odt(),
+    corpus.build_tar({"a.txt": b"hello", "b/c.txt": b"x" * 600}),
+    corpus.build_tar({"a.txt": b"hello"}, compression="gz"),
+    corpus.build_tar({"a.txt": b"hello"}, compression="xz"),
 ]
 
 ALL_TYPES_POLICY = Policy(

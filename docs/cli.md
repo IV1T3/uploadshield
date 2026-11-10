@@ -41,7 +41,7 @@ uploads/
   ✗ avatar.png  PHP script · 30 bytes
       type_not_allowed  PHP script files are not allowed.
       embedded_code  The file contains embedded code.  <?php
-  ? backup.tar.gz  gzip archive · 132 bytes
+  ? backup.7z  7-Zip archive · 187 bytes
       type_not_allowed  Its contents cannot be inspected: unpack it and scan the files, or add --clamav.
   ! holiday.png  JPEG image · 14.6 KB
       extension_mismatch  The file extension '.png' does not match its content (JPEG image).
@@ -60,8 +60,8 @@ judges each file by its content with a built-in **scan policy**:
 - **every format uploadshield can inspect is accepted** and checked with all content
   checks: archives, Office documents, XML, PDF, SVG, embedded code, images;
 - **executables and HTML** are refused outright (dangerous whatever they contain);
-- **archives it cannot open** (gzip, tar, bzip2, xz, 7-Zip, RAR) are reported as not
-  verified: their contents were not inspected;
+- **archives it cannot open** (7-Zip, RAR) are reported as not verified: their
+  contents were not inspected. ZIP and tar archives, plain or compressed, are opened;
 - **names count when they are dangerous** (`shell.php.png`, `.htaccess`, `CON.txt`, path
   tricks): hidden files, names without an extension and empty files are fine; a name
   whose extension contradicts the content, or that is too long, is "refused";
@@ -89,7 +89,7 @@ downloads, attachments and fixtures.
 | clean | `✓` | nothing found |
 | dangerous | `✗` | disguised scripts and executables, active PDF/Office/SVG content, archive bombs, hidden code, polyglots, malware, unsafe names |
 | refused | `!` | harmless, but not acceptable as an upload (a JPEG named `.png`, a corrupt image) |
-| not verified | `?` | it could not judge the file: an unknown format, archives other than ZIP, encrypted files, files too large for a check, unreadable files, an unavailable scanner |
+| not verified | `?` | it could not judge the file: an unknown format, 7-Zip and RAR archives, encrypted files, files too large for a check, unreadable files, an unavailable scanner |
 
 A file takes the worst verdict of its violations (dangerous before not verified before
 refused). Which code leads to which verdict is listed under

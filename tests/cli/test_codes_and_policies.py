@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gzip
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -61,7 +60,12 @@ def test_verdicts_depend_on_what_was_found() -> None:
     html = verdict(corpus.HTML, "page.html", scan=True)
     assert html is Verdict.DANGEROUS
     # Archives a scan cannot open are not verified; encrypted PDFs are not either.
-    assert verdict(gzip.compress(b"x"), "a.gz", scan=True) is Verdict.NOT_VERIFIED
+    assert verdict(corpus.SEVEN_ZIP, "a.7z", scan=True) is Verdict.NOT_VERIFIED
+    # Tar archives are opened: judged by what they hold.
+    site = corpus.build_tar({"index.html": b"<p>"}, compression="gz")
+    assert verdict(site, "site.tar.gz", scan=True) is Verdict.CLEAN
+    slip = corpus.build_tar({"../../var/www/shell.php": b"x"}, compression="xz")
+    assert verdict(slip, "site.tar.xz", scan=True) is Verdict.DANGEROUS
     assert verdict(corpus.pdf_encrypted(), "a.pdf", scan=True) is Verdict.NOT_VERIFIED
     assert verdict(corpus.pdf_with_javascript(), "a.pdf", scan=True) is Verdict.DANGEROUS
     assert verdict(corpus.png(), "a.png", scan=True) is Verdict.CLEAN

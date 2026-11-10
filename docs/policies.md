@@ -91,7 +91,9 @@ for an unknown category (`"*/*"`).
 WebP, BMP, TIFF, ICO, AVIF and HEIC, but not SVG. Executables (shell scripts, PHP,
 JAR, APK, Windows, ELF and Mach-O binaries, Java classes, WebAssembly) and the
 formats browsers run script in (`text/html`, `image/svg+xml`, `application/xml`) are
-only accepted when listed by their exact MIME type.
+only accepted when listed by their exact MIME type. So are 7-Zip and RAR archives,
+which no check can open: `"application/*"` matches ZIP and tar archives, which are
+inspected, but not those two.
 
 The type is always the one detected from the **content**. A PHP script named
 `photo.png` is a PHP script and fails `type_not_allowed`. All 61 types uploadshield
@@ -166,7 +168,7 @@ understands:
 
 | Check | Looks at | Catches |
 |---|---|---|
-| `ArchiveSafety` | ZIP and everything built on it (OOXML, ODF, EPUB, JAR, APK) | ZIP bombs, zip slip, symlinks, encrypted members, dangerous member names |
+| `ArchiveSafety` | ZIP and everything built on it (OOXML, ODF, EPUB, JAR, APK); tar, plain or compressed; gzip, bzip2, xz | archive bombs, zip slip, links, encrypted members, dangerous member names |
 | `OfficeMacros` | Word, Excel, PowerPoint, OpenDocument, legacy OLE2, CSV | macros, ActiveX, DDE fields and formulas, remote templates |
 | `XmlSafety` | XML files and the XML parts of OOXML, ODF, EPUB | DTDs (XXE, billion laughs) |
 | `PdfActiveContent` | PDF | JavaScript, launch actions, embedded files, XFA forms and forms that submit or import data, encrypted PDFs |
@@ -334,7 +336,7 @@ IMPORTS = Policy(
 
 `OfficeMacros` refuses CSV cells that start a DDE command (`=cmd|' /C calc'!A0`).
 
-**ZIP uploads** with tighter archive limits:
+**ZIP or tar uploads** with tighter archive limits:
 
 ```python
 from uploadshield import MB, MiB, Policy
@@ -342,7 +344,7 @@ from uploadshield.checks import DEFAULT_CONTENT_CHECKS, ArchiveSafety
 
 BUNDLES = Policy(
     name="bundles",
-    allowed_types={"application/zip"},
+    allowed_types={"application/zip", "application/x-tar", "application/gzip"},
     max_size=50 * MB,
     content_checks=tuple(
         ArchiveSafety(max_entries=1_000, max_uncompressed_bytes=500 * MiB, max_depth=1)
@@ -353,10 +355,12 @@ BUNDLES = Policy(
 )
 ```
 
-Every member is measured by inflating it, and members with a dangerous extension or a
-server configuration name (`shell.php`, `x.php.png`, `.htaccess`) are refused. Member **contents** are not validated
-against a policy: a script named `notes.txt` inside the ZIP passes. Validate extracted
-files on their own if you extract them.
+Every member is measured by inflating it (a `.tar.gz` while it decompresses). Unsafe
+paths, links, and members with a dangerous extension or a server configuration name
+(`shell.php`, `x.php.png`, `.htaccess`) are refused. Member **contents** are not
+validated against a policy: a script named `notes.txt` inside the archive passes.
+Validate extracted files on their own if you extract them, and extract safely: Python's
+`tarfile` with `filter="data"`, and `zipfile`'s `extractall`, which cleans member paths.
 
 **Large media**:
 
@@ -477,12 +481,12 @@ proven by content alone; they are refined from their parent by the file's extens
 | `application/x-sh` | Shell script | `.sh` | executable |
 | `application/x-httpd-php` | PHP script | `.php` | executable |
 | `application/zip` | ZIP archive | `.zip` | zip container |
-| `application/gzip` | gzip archive | `.gz` `.tgz` |  |
-| `application/x-tar` | tar archive | `.tar` |  |
-| `application/x-bzip2` | bzip2 archive | `.bz2` |  |
-| `application/x-xz` | xz archive | `.xz` |  |
-| `application/x-7z-compressed` | 7-Zip archive | `.7z` |  |
-| `application/vnd.rar` | RAR archive | `.rar` |  |
+| `application/gzip` | gzip archive | `.gz` `.tgz` | opened (tar or single file) |
+| `application/x-tar` | tar archive | `.tar` | opened |
+| `application/x-bzip2` | bzip2 archive | `.bz2` | opened (tar or single file) |
+| `application/x-xz` | xz archive | `.xz` | opened (tar or single file) |
+| `application/x-7z-compressed` | 7-Zip archive | `.7z` | not opened, never matched by wildcards |
+| `application/vnd.rar` | RAR archive | `.rar` | not opened, never matched by wildcards |
 | `application/java-archive` | Java archive | `.jar` | executable, zip container |
 | `application/vnd.android.package-archive` | Android package | `.apk` | executable, zip container |
 | `application/vnd.microsoft.portable-executable` | Windows executable | `.exe` `.dll` `.sys` `.scr` | executable |
@@ -492,5 +496,6 @@ proven by content alone; they are refined from their parent by the file's extens
 | `application/wasm` | WebAssembly module | `.wasm` | executable |
 | `application/vnd.sqlite3` | SQLite database | `.sqlite` `.sqlite3` `.db` |  |
 
-Only ZIP containers are opened. gzip, tar, bzip2, xz, 7-Zip and RAR archives are
-detected but their contents are not inspected.
+[`ArchiveSafety`](checks.md#archivesafety) opens ZIP containers and tar archives
+(plain, gzip, bzip2, xz). 7-Zip and RAR archives are detected but not opened, and
+wildcards never match them.

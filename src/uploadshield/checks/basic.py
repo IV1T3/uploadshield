@@ -224,6 +224,9 @@ def name_variants(name: str) -> list[tuple[str, str]]:
 
 #: Content that executes scripts in browsers; wildcards never match these.
 _SCRIPTABLE = frozenset({"text/html", "image/svg+xml", "application/xml"})
+#: Archives that no check opens, so their members cannot be inspected.  Wildcards never
+#: match them: a policy accepts one only by naming its type.
+UNINSPECTED_ARCHIVES = frozenset({"application/x-7z-compressed", "application/vnd.rar"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -375,8 +378,9 @@ class AllowedTypes(Check):
     """Allow only files whose *content* is one of ``types``.
 
     Entries are MIME types (aliases are resolved, unknown types raise) or wildcards
-    such as ``"image/*"``.  Wildcards never match executables or script-capable
-    formats (HTML, SVG, XML): those must be listed explicitly.
+    such as ``"image/*"``.  Wildcards never match executables, script-capable formats
+    (HTML, SVG, XML) or archives no check can open (7-Zip, RAR): those must be listed
+    explicitly.
     """
 
     _deconstruct_module = _PUBLIC
@@ -391,7 +395,7 @@ class AllowedTypes(Check):
     def allows(self, file_type: FileType) -> bool:
         if file_type.mime in self.types:
             return True
-        if file_type.executable or file_type.mime in _SCRIPTABLE:
+        if file_type.executable or file_type.mime in _SCRIPTABLE | UNINSPECTED_ARCHIVES:
             return False
         return f"{file_type.category}/*" in self.types
 

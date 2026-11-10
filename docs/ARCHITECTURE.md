@@ -56,8 +56,8 @@ commands, or on e-mail attachments.
    `message` and private `details`. Clients see codes and messages; logs and signals
    see the details (detected type, matched signature, SHA-256).
 7. **Secure defaults, explicit escape hatches.** Presets never include script-capable or
-   executable formats, and wildcards (`image/*`) never match them either. Loosening is
-   always an explicit argument.
+   executable formats, and wildcards (`image/*`) never match them, nor archives no
+   check can open (7-Zip, RAR). Loosening is always an explicit argument.
 8. **Fail closed.** A crashing parser, an unreachable scanner or a file that cannot be
    inspected (an encrypted archive or PDF) is a refusal, not a pass.
 
@@ -389,8 +389,8 @@ ships it.
   registry:
   - It accepts every registered format except executables and HTML, which are dangerous
     as uploads whatever they contain.
-  - Archives the checks cannot open (gzip, tar, 7z, ...) are left out, so they are
-    reported as *not verified* instead of passing uninspected.
+  - Archives the checks cannot open (7-Zip, RAR: `UNINSPECTED_ARCHIVES`) are left
+    out, so they are reported as *not verified* instead of passing uninspected.
   - Names are judged only for danger: hidden or extensionless names are fine.
   - There is no size limit; a file too large for a check is *not verified*, never
     skipped. It does not sanitize.

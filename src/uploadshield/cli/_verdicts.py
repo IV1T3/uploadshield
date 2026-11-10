@@ -169,7 +169,7 @@ CODE_INFO: dict[Code, CodeInfo] = {
     Code.ARCHIVE_CORRUPT: CodeInfo(
         R,
         "corrupt archive",
-        "The ZIP container cannot be read consistently.",
+        "The archive (ZIP, tar or a compressed stream) cannot be read consistently.",
         "A damaged file, or one built so that tools disagree about its contents.",
         "none",
     ),
@@ -177,7 +177,7 @@ CODE_INFO: dict[Code, CodeInfo] = {
         D,
         "unsafe archive path (zip slip)",
         "A member would be extracted outside the target directory (../, absolute paths, "
-        "drive letters) or is a symbolic link.",
+        "drive letters) or is a link, device file or FIFO.",
         "Extracting it overwrites files elsewhere.",
         "none",
     ),

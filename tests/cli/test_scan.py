@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -19,8 +20,9 @@ def test_each_file_gets_its_verdict(cli: Cli, samples: Path) -> None:
     assert run.verdicts() == {name: verdict for name, (_, verdict) in SAMPLES.items()}
     summary = run.json()["summary"]
     assert summary["files"] == len(SAMPLES)
-    assert (summary["clean"], summary["dangerous"]) == (4, 5)
-    assert (summary["refused"], summary["not_verified"]) == (1, 1)
+    expected = Counter(verdict for _, verdict in SAMPLES.values())
+    assert {k: summary[k] for k in expected} == dict(expected)
+    assert set(expected) == {"clean", "dangerous", "refused", "not_verified"}
 
 
 def test_clean_files_exit_zero(cli: Cli, tmp_path: Path) -> None:
@@ -40,7 +42,7 @@ def test_human_output(cli: Cli, samples: Path) -> None:
     assert "pdf_active_content" in out
     assert "JavaScript" in out  # the detail that matters
     assert "! photo.png" in out
-    assert "? backup.gz" in out
+    assert "? backup.7z" in out
     assert "contents cannot be inspected" in out
     assert "\x1b[" not in out  # not a terminal: no colour
     assert "uploadshield explain <code>" in out
@@ -50,7 +52,7 @@ def test_quiet_shows_only_findings(cli: Cli, samples: Path) -> None:
     out = cli("scan", samples, "--quiet").out
     assert "ok.png" not in out
     assert "js.pdf" in out
-    assert "11 files in" in out  # the summary still counts everything
+    assert f"{len(SAMPLES)} files in" in out  # the summary still counts everything
 
 
 def test_directories_are_walked_in_sorted_order(cli: Cli, tmp_path: Path) -> None:

@@ -60,7 +60,7 @@ and safe to match in client code and tests. Messages are for people and may chan
 verdict" column is how [`uploadshield scan`](cli.md#verdicts) summarizes the code;
 those marked * depend on the file. `type_not_allowed` is dangerous when the content is
 an executable or HTML; otherwise it is "refused" by `uploadshield validate` and "not
-verified" by `uploadshield scan` (a format the scan cannot open, such as a gzip
+verified" by `uploadshield scan` (a format the scan cannot open, such as a 7-Zip
 archive). `pdf_active_content` is "not verified" when the PDF is encrypted or cannot be
 decoded. In a scan, `type_unknown` on an empty file is clean. `uploadshield explain CODE` prints the meaning, a
 typical cause and the option that allows it.

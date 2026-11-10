@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from uploadshield.checks import (
     DEFAULT_CONTENT_CHECKS,
+    UNINSPECTED_ARCHIVES,
     ClamAV,
     EmbeddedContent,
     FilenameCheck,
@@ -25,17 +26,6 @@ __all__ = ["SetupError", "scan_policy", "scanner_checks"]
 
 #: Formats a scan refuses outright: dangerous to accept whatever they contain.
 ACTIVE_TYPES = frozenset({"text/html"})
-#: Archives whose members the checks cannot see (only ZIP containers are opened).
-OPAQUE_ARCHIVES = frozenset(
-    {
-        "application/gzip",
-        "application/x-tar",
-        "application/x-bzip2",
-        "application/x-xz",
-        "application/x-7z-compressed",
-        "application/vnd.rar",
-    }
-)
 
 
 class SetupError(Exception):
@@ -54,7 +44,7 @@ def scan_policy(extra_checks: tuple[Check, ...] = ()) -> Policy:
     allowed = {
         t.mime
         for t in all_types()
-        if not t.executable and t.mime not in ACTIVE_TYPES | OPAQUE_ARCHIVES
+        if not t.executable and t.mime not in ACTIVE_TYPES | UNINSPECTED_ARCHIVES
     }
     content_checks = tuple(
         dataclasses.replace(check, max_scan_bytes=1 << 62)

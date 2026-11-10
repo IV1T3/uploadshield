@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import gzip
 import io
 import json
 import sys
@@ -63,7 +62,8 @@ SAMPLES: dict[str, tuple[bytes, str]] = {
     "cat.png": (corpus.PHP_SHELL, "dangerous"),
     "xss.svg": (corpus.svg('<rect onload="alert(1)"/>'), "dangerous"),
     "photo.png": (corpus.image("JPEG"), "refused"),  # harmless, but misnamed
-    "backup.gz": (gzip.compress(b"anything"), "not_verified"),
+    "site.tar.gz": (corpus.build_tar({"index.html": b"<p>hi</p>"}, compression="gz"), "clean"),
+    "backup.7z": (corpus.SEVEN_ZIP, "not_verified"),
 }
 
 

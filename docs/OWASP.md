@@ -194,8 +194,8 @@ and PDFs (which cannot be inspected), and scripts disguised as CSV (opt-in
 | ID | OWASP | Coverage | uploadshield |
 |---|---|---|---|
 | `limits.upload-size` | Set an upload size limit. | **enforced** | Per policy; Django aborts while streaming, plus `MAX_UPLOAD_SIZE` as a hard cap. |
-| `limits.decompressed-size` | Measure the size after decompression (secure ZIP size calculation). | **enforced** | Members are inflated as streams and must match their declared size and CRC; nested archives share one budget. |
-| `limits.safe-extraction` | Extract safely (CERT IDS04-J). | **enforced** | Entry count, total size, zip slip, absolute paths, symlinks, encrypted members. |
+| `limits.decompressed-size` | Measure the size after decompression (secure ZIP size calculation). | **enforced** | ZIP members are inflated as streams and must match their declared size and CRC; compressed tar archives are measured while they decompress; nested archives share one budget. |
+| `limits.safe-extraction` | Extract safely (CERT IDS04-J). | **enforced** | Entry count, total size, zip slip, absolute paths, links, device files and encrypted members, in ZIP and tar archives. |
 | `limits.download-rate` | Rate-limit the download service. | **guidance** | Server, proxy or CDN configuration. |
 
 *71 items: 31 enforced, 8 available, 3 partial, 15 guidance; 14 covered by another item.*
@@ -305,7 +305,7 @@ payloads, against the engine and against Django, Flask and FastAPI.
 | `ufu.prevent.virus-scan` | Scan uploads with a virus scanner. | see `content.malware-scan` |  |
 | `ufu.prevent.post-only` | Use POST rather than PUT or GET. | **guidance** | Restrict the methods of your routes; uploadshield validates multipart bodies of any method. |
 | `ufu.prevent.logging` | Log activity; protect the logs against forgery and injection. | **enforced** | Every refusal is logged with structured data; field and file names are logged escaped, so control characters cannot forge log lines. |
-| `ufu.prevent.archive-members` | Check each file inside an archive individually. | **partial** | Every member's size, CRC, path and name is checked, also in nested archives; member contents are not validated against a policy. |
+| `ufu.prevent.archive-members` | Check each file inside an archive individually. | **partial** | Every member's size, path and name (and CRC in ZIP) is checked, in ZIP and tar archives and in nested ones; member contents are not validated against a policy. |
 | `ufu.prevent.database` | Consider storing files in a database. | see `storage.database` |  |
 | `ufu.prevent.separate-domain` | Serve uploads from an isolated server on a separate domain. | **guidance** | Deployment. |
 | `ufu.prevent.authorized-uploaders` | Only authenticated, authorized users upload. | see `permissions.authentication` |  |

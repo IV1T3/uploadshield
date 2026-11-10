@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import bz2
+import gzip
 import io
+import lzma
 import struct
+import tarfile
 import zipfile
 import zlib
 
@@ -222,6 +226,86 @@ def zip_encrypted_flag() -> bytes:
     central = data.rfind(b"PK\x01\x02")
     data[central + 8] |= 0x1  # central directory: general purpose flags
     return bytes(data)
+
+
+#: How each compressed tar format is produced (``""`` is a plain tar).
+TAR_COMPRESSIONS = {
+    "": lambda data: data,
+    "gz": gzip.compress,
+    "bz2": bz2.compress,
+    "xz": lzma.compress,
+}
+#: The MIME type detected for each, as a policy names it.
+TAR_TYPES = {
+    "": "application/x-tar",
+    "gz": "application/gzip",
+    "bz2": "application/x-bzip2",
+    "xz": "application/x-xz",
+}
+
+
+def build_tar(
+    entries: dict[str, bytes] | None = None,
+    *,
+    compression: str = "",
+    links: dict[str, str] | None = None,
+    hardlinks: dict[str, str] | None = None,
+    devices: tuple[str, ...] = (),
+) -> bytes:
+    """A tar archive (``compression``: ``""``, ``"gz"``, ``"bz2"`` or ``"xz"``)."""
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w", format=tarfile.PAX_FORMAT) as tf:
+        for name, data in (entries or {}).items():
+            info = tarfile.TarInfo(name)
+            info.size = len(data)
+            tf.addfile(info, io.BytesIO(data))
+        for kind, targets in ((tarfile.SYMTYPE, links), (tarfile.LNKTYPE, hardlinks)):
+            for name, target in (targets or {}).items():
+                info = tarfile.TarInfo(name)
+                info.type, info.linkname = kind, target
+                tf.addfile(info)
+        for name in devices:
+            info = tarfile.TarInfo(name)
+            info.type = tarfile.CHRTYPE
+            tf.addfile(info)
+    return TAR_COMPRESSIONS[compression](buf.getvalue())
+
+
+def tar_v7(name: str, data: bytes) -> bytes:
+    """An old-style (V7) tar archive: no ``ustar`` magic, only a valid checksum."""
+    header = bytearray(tarfile.TarInfo(name).tobuf(format=tarfile.USTAR_FORMAT)[:512])
+    header[124:136] = b"%011o\x00" % len(data)
+    header[257:265] = b"\x00" * 8  # no magic, no version
+    header[148:156] = b" " * 8
+    header[148:155] = b"%06o\x00" % sum(header)
+    padding = b"\x00" * (-len(data) % 512)
+    return bytes(header) + data + padding + b"\x00" * 1024
+
+
+def tar_gz_bomb(megabytes: int = 900) -> bytes:
+    """A .tar.gz whose header tells the truth: ``megabytes`` of zeros, under 1 MB packed."""
+    buf = io.BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode="wb", compresslevel=9) as gz:
+        info = tarfile.TarInfo("zeros.bin")
+        info.size = megabytes * 1024 * 1024
+        gz.write(info.tobuf())
+        chunk = b"\x00" * (1024 * 1024)
+        for _ in range(megabytes):
+            gz.write(chunk)
+    return buf.getvalue()
+
+
+def tar_with_negative_size() -> bytes:
+    """A member whose base-256 size is negative (it would send readers backwards)."""
+    header = bytearray(tarfile.TarInfo("a.txt").tobuf(format=tarfile.USTAR_FORMAT)[:512])
+    header[124:136] = b"\xff" * 12
+    header[148:156] = b" " * 8
+    header[148:155] = b"%06o\x00" % sum(header)
+    return bytes(header) + b"\x00" * 1024
+
+
+#: A 7-Zip signature header: detected as 7-Zip, never opened.
+SEVEN_ZIP = b"7z\xbc\xaf\x27\x1c\x00\x04" + b"\x00" * 24
 
 
 def zip_bomb_ratio(megabytes: int = 64) -> bytes:

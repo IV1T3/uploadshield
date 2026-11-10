@@ -44,7 +44,7 @@ each violation it reports.
 | `AllowedTypes` | `type` | every file | `type_unknown`, `type_not_allowed` |
 | `ExtensionMatchesType` | `extension` | files with a known type and an extension | `extension_mismatch` |
 | `DeclaredTypeMatches` | `declared_type` | files with a known type and a declared type | `declared_type_mismatch` |
-| `ArchiveSafety` | `archive` | ZIP and ZIP-based formats | `archive_corrupt`, `archive_bomb`, `archive_unsafe_path`, `archive_dangerous_member`, `archive_encrypted` |
+| `ArchiveSafety` | `archive` | ZIP and ZIP-based formats; tar, plain or compressed; gzip, bzip2 and xz files | `archive_corrupt`, `archive_bomb`, `archive_unsafe_path`, `archive_dangerous_member`, `archive_encrypted` |
 | `OfficeMacros` | `office` | OOXML, ODF, legacy OLE2, CSV | `office_macros`, `office_external_reference` |
 | `XmlSafety` | `xml` | OOXML, ODF, EPUB, XML | `xml_dtd` |
 | `PdfActiveContent` | `pdf` | PDF | `pdf_active_content` |
@@ -116,7 +116,7 @@ Refuses files whose **content** is not on the allow-list. Built from the policy'
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `types` | `frozenset[str]` | `frozenset()` | Canonical MIME types and `category/*` wildcards (normalized from the policy's `allowed_types`). Wildcards never match executables, `text/html`, `image/svg+xml` or `application/xml`. |
+| `types` | `frozenset[str]` | `frozenset()` | Canonical MIME types and `category/*` wildcards (normalized from the policy's `allowed_types`). Wildcards never match executables, `text/html`, `image/svg+xml`, `application/xml` or the [`UNINSPECTED_ARCHIVES`](#constants). |
 
 | Code | When | Details |
 |---|---|---|
@@ -148,34 +148,50 @@ aliases, or its parent type). Added when the policy has `match_declared_type=Tru
 
 ## ArchiveSafety
 
-Inspects ZIP archives and every format built on ZIP: `.zip`, Word/Excel/PowerPoint
-(including macro-enabled), OpenDocument, EPUB, JAR and APK. It measures every member
-by inflating it (headers can lie about sizes), walks nested archives, and refuses
-members with a dangerous extension or a server configuration name.
+Inspects archives without extracting them:
+
+- ZIP and every format built on ZIP: `.zip`, Word/Excel/PowerPoint (including
+  macro-enabled), OpenDocument, EPUB, JAR and APK;
+- tar archives, plain (`.tar`) or compressed with gzip, bzip2 or xz (`.tar.gz`, `.tgz`,
+  `.tar.bz2`, `.tar.xz`);
+- gzip, bzip2 and xz files that hold no archive (`data.csv.gz`): they are
+  decompressed and measured like a member. Unless what it holds is a tar archive, a
+  tar header anywhere in it is refused: `tar -xzf` skips data until it finds one and
+  extracts what follows.
+
+It measures every member (headers can lie about sizes; compressed tar archives are
+measured while they decompress), walks archives inside archives (`site.zip` inside
+`backup.tar.gz`), and refuses unsafe paths, links, and members with a dangerous
+extension or a server configuration name. Tar members hidden after an end-of-archive
+marker are judged too, because `tar --ignore-zeros` extracts them, and a damaged tar
+header is refused rather than skipped. 7-Zip and RAR archives are not opened
+([`UNINSPECTED_ARCHIVES`](#constants)).
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `max_entries` | `int` | `10_000` | Members allowed, counted across nested archives. |
 | `max_uncompressed_bytes` | `int` | `1 GiB` | Total uncompressed size, declared and measured, shared across nesting levels. |
 | `max_ratio` | `int` | `100` | Highest compression ratio... |
-| `ratio_threshold_bytes` | `int` | `10 MiB` | ...enforced only once a level declares more than this many bytes. |
-| `allow_encrypted` | `bool` | `False` | Allow encrypted members (they cannot be inspected). |
-| `verify_sizes` | `bool` | `True` | Inflate every member to measure its real size and CRC. `False` trusts the headers. |
+| `ratio_threshold_bytes` | `int` | `10 MiB` | ...enforced only once a level declares (ZIP) or decompresses (gzip, bzip2, xz) more than this many bytes. |
+| `allow_encrypted` | `bool` | `False` | Allow encrypted ZIP members (they cannot be inspected). |
+| `verify_sizes` | `bool` | `True` | Inflate every ZIP member to measure its real size and CRC. `False` trusts the ZIP headers. Tar archives keep their headers in the stream, so they are always read through. |
 | `check_member_names` | `bool` | `True` | Refuse members whose name has an extension in `DANGEROUS_EXTENSIONS` (in any segment: `x.php.png`) or is in `DANGEROUS_NAMES` (`.htaccess`). The policy's own `FilenameCheck` is not applied to members. |
 | `max_depth` | `int` | `3` | Levels of nested archives to open. |
-| `max_nested_bytes` | `int` | `64 MiB` | Nested archives larger than this are refused as too large to inspect. |
+| `max_nested_bytes` | `int` | `64 MiB` | Nested archives larger than this are refused as too large to inspect. A tar inside its gzip, bzip2 or xz stream is one archive, not a nested one. |
 
 | Code | When | Details |
 |---|---|---|
-| `archive_corrupt` | the archive cannot be read consistently, including members whose local header names a different file than the central directory | `member` (when one member is at fault) |
-| `archive_bomb` | too many members, too large, too high a ratio, overlapping entries, a member inflating beyond its header, nesting too deep or too large | `entries`, `uncompressed`, `ratio`, `overlapping`, `archive`; or `member`, `declared`, `measured_at_least`; or `member` |
-| `archive_unsafe_path` | absolute paths, drive letters, `..`, NUL bytes, symbolic links | `paths` (up to 10) |
+| `archive_corrupt` | the archive cannot be read consistently: a damaged ZIP, tar header or compressed stream, a truncated archive, a tar header hidden behind other data in a compressed stream, or a ZIP member whose local header names a different file than the central directory | `member` (when one member is at fault); `tar_header_at` (the offset of a hidden tar header) |
+| `archive_bomb` | too many members, too large, too high a ratio, overlapping entries, a member inflating beyond its header, a compressed stream decompressing beyond the budget or ratio, nesting too deep or too large | `entries`, `uncompressed`, `ratio`, `overlapping`, `archive`; or `member`, `declared`, `measured_at_least`; or `archive`, `measured_at_least`; or `member` |
+| `archive_unsafe_path` | absolute paths, drive letters, `..`, NUL bytes, symbolic links; in tar archives also hard links, device files and FIFOs | `paths` (up to 10) |
 | `archive_dangerous_member` | members with a dangerous extension or a server configuration name | `members` (up to 10; nested ones as `outer.zip/inner.zip/x`) |
-| `archive_encrypted` | an encrypted member | none |
+| `archive_encrypted` | an encrypted ZIP member | none |
 
 Member **contents** are not validated against a policy; a script named `notes.txt`
-inside the archive passes. Only ZIP containers are opened: gzip, tar, bzip2, xz, 7-Zip
-and RAR archives are detected but not inspected.
+inside the archive passes. When contents matter, add [`ClamAV`](#clamav), which unpacks
+archives itself. 7-Zip and RAR archives are detected but not opened: wildcards never
+match them, so a policy accepts one only by naming its type, and then accepts it
+uninspected.
 
 ## OfficeMacros
 
@@ -453,6 +469,7 @@ All importable from `uploadshield.checks`:
 | `DANGEROUS_EXTENSIONS` | 105 extensions servers or clients execute: PHP variants (`php`, `php3`-`php8`, `phtml`, `phar`, `pgif`, ...), ASP/.NET (`asp`, `aspx`, `ashx`, `asmx`, `cer`, `cshtml`, `svc`, ...), JSP and ColdFusion, CGI, Perl, Python, Ruby and shell scripts, Windows executables and scripts (`exe`, `dll`, `msi`, `scr`, `bat`, `cmd`, `vbs`, `js`, `ps1`, `hta`, `lnk`, `reg`, `chm`, ...), `jar`, `swf`, `xap`, `settingcontent-ms`, `iqy`, `slk`, `xll`, `htaccess`, `htpasswd`. |
 | `DANGEROUS_NAMES` | `.htaccess`, `.htpasswd`, `web.config`, `.user.ini`, `php.ini`, `crossdomain.xml`, `clientaccesspolicy.xml`. |
 | `WINDOWS_RESERVED_NAMES` | Windows device names: `con`, `prn`, `aux`, `nul`, `conin$`, `conout$`, `com0`-`com9`, `lpt0`-`lpt9`. |
+| `UNINSPECTED_ARCHIVES` | Archives no check opens: `application/x-7z-compressed`, `application/vnd.rar`. Wildcards (`application/*`) never match them, and `uploadshield scan` reports them as not verified. |
 | `DEFAULT_PDF_KEYWORDS` | `JavaScript`, `JS`, `Launch`, `EmbeddedFile`, `EmbeddedFiles`, `RichMedia`, `XFA`, `ImportData`, `SubmitForm`, `GoToE`. |
 | `DEFAULT_MAGIKA_FORBIDDEN` | 38 Magika labels: executables (`pebin`, `elf`, `macho`, `msi`, `apk`, `jar`, `dex`, `wasm`, ...), scripts (`shell`, `batch`, `powershell`, `vba`, `javascript`, `python`, `php`, `perl`, `ruby`, `lua`, ...), and `html`, `svg`, `mht`, `htaccess`, `lnk`, `winregistry`. |
 | `MAGIKA_EQUIVALENTS` | Magika labels and the MIME type each means (`html` is `text/html`, `php` is `application/x-httpd-php`, ...). A label is not refused when it is the type the policy accepted. |

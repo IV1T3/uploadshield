@@ -525,14 +525,16 @@ CHEAT_SHEET_SECTIONS: tuple[Section, ...] = (
                 "limits.decompressed-size",
                 "Measure the size after decompression (secure ZIP size calculation).",
                 "enforced",
-                "Members are inflated as streams and must match "
-                "their declared size and CRC; nested archives share one budget.",
+                "ZIP members are inflated as streams and must match their declared size "
+                "and CRC; compressed tar archives are measured while they decompress; "
+                "nested archives share one budget.",
             ),
             Item(
                 "limits.safe-extraction",
                 "Extract safely (CERT IDS04-J).",
                 "enforced",
-                "Entry count, total size, zip slip, absolute paths, symlinks, encrypted members.",
+                "Entry count, total size, zip slip, absolute paths, links, device files and "
+                "encrypted members, in ZIP and tar archives.",
             ),
             Item(
                 "limits.download-rate",
@@ -967,8 +969,9 @@ UNRESTRICTED_UPLOAD_SECTIONS: tuple[Section, ...] = (
                 "ufu.prevent.archive-members",
                 "Check each file inside an archive individually.",
                 "partial",
-                "Every member's size, CRC, path and name is checked, also in nested "
-                "archives; member contents are not validated against a policy.",
+                "Every member's size, path and name (and CRC in ZIP) is checked, in ZIP and "
+                "tar archives and in nested ones; member contents are not validated against "
+                "a policy.",
             ),
             Item(
                 "ufu.prevent.database",

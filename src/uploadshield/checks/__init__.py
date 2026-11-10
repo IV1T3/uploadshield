@@ -11,6 +11,7 @@ from .archive import ArchiveSafety
 from .basic import (
     DANGEROUS_EXTENSIONS,
     DANGEROUS_NAMES,
+    UNINSPECTED_ARCHIVES,
     WINDOWS_RESERVED_NAMES,
     AllowedTypes,
     DeclaredTypeMatches,
@@ -33,6 +34,7 @@ __all__ = [
     "DEFAULT_MAGIKA_FORBIDDEN",
     "DEFAULT_PDF_KEYWORDS",
     "MAGIKA_EQUIVALENTS",
+    "UNINSPECTED_ARCHIVES",
     "WINDOWS_RESERVED_NAMES",
     "AllowedTypes",
     "ArchiveSafety",
