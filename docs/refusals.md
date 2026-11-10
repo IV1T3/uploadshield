@@ -67,6 +67,47 @@ typical cause and the option that allows it.
 
 Custom checks may report their own codes (any string).
 
+### CWE mapping
+
+Each built-in code is mapped to the [CWE](https://cwe.mitre.org/) weakness(es) it
+corresponds to, for teams who correlate upload rejections with their other security
+tooling. The mapping is surfaced **only** where diagnostics already are — the log
+record, framework signals (via `uploadshield.cwe_for`) and the CLI (`uploadshield
+explain`, and the `cwe` field in `--json` output). It is **never** added to the client
+response, even with `EXPOSE_DETAILS` on. CWE (not MITRE ATT&CK) is used: ATT&CK models
+in-environment adversary behaviour, while uploadshield is a boundary input-validation
+control, which CWE describes precisely.
+
+| Code | CWE |
+|---|---|
+| `file_too_large` | CWE-400 |
+| `filename_invalid` | CWE-22 |
+| `filename_reserved` | CWE-67 |
+| `filename_dangerous_extension` | CWE-434 |
+| `type_not_allowed` | CWE-434 |
+| `extension_mismatch` | CWE-646, CWE-434 |
+| `content_mismatch` | CWE-646, CWE-434 |
+| `declared_type_mismatch` | CWE-646 |
+| `image_too_large` | CWE-409 |
+| `pdf_active_content` | CWE-434 |
+| `archive_unsafe_path` | CWE-22 |
+| `archive_bomb` | CWE-409, CWE-400 |
+| `archive_dangerous_member` | CWE-434 |
+| `office_macros` | CWE-434 |
+| `office_external_reference` | CWE-918 |
+| `svg_active_content` | CWE-79 |
+| `xml_dtd` | CWE-611, CWE-776 |
+| `embedded_code` | CWE-434, CWE-94 |
+| `polyglot` | CWE-434 |
+| `malware_detected` | CWE-506 |
+| `signature_match` | CWE-506 |
+
+The codes not listed (`file_empty`, `filename_too_long`, `filename_hidden`,
+`filename_missing_extension`, `type_unknown`, `image_corrupt`, `archive_corrupt`,
+`archive_encrypted`, `scanner_unavailable`, `sanitization_failed`, `check_failed`) have
+no accurate CWE: they are operational outcomes or "cannot inspect" results, not a
+specific weakness, so their mapping is empty by design rather than by omission.
+
 ## HTTP status codes
 
 One status is chosen for the whole request, from the codes of every refused file:

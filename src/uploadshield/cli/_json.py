@@ -27,7 +27,7 @@ def file_entry(outcome: Outcome) -> dict[str, Any]:
     if outcome.result is not None:
         entry["sha256"] = outcome.sha256
         result = outcome.result
-        entry |= result.as_dict(include_details=True)
+        entry |= result.as_dict(include_details=True, include_cwe=True)
         entry.pop("field", None)  # always None outside a web request
         for error, verdict in zip(entry["errors"], outcome.verdicts, strict=True):
             error["verdict"] = verdict.value

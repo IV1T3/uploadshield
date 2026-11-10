@@ -15,7 +15,7 @@ from .core.result import SanitizedFile, ValidationResult
 from .core.sniffing import BuiltinSniffer, ChainedSniffer, MagicSniffer, Sniffer
 from .core.types import GB, KB, MB, FileType, GiB, KiB, MiB, get_type, register_type
 from .core.upload import InspectedFile, Upload
-from .core.violations import Code, Violation
+from .core.violations import Code, CweRef, Violation, cwe_for
 from .engine import validate
 from .policy import Policy
 
@@ -40,6 +40,7 @@ __all__ = [
     "BuiltinSniffer",
     "ChainedSniffer",
     "Code",
+    "CweRef",
     "FileType",
     "GiB",
     "InspectedFile",
@@ -53,6 +54,7 @@ __all__ = [
     "ValidationResult",
     "Violation",
     "checks",
+    "cwe_for",
     "get_type",
     "presets",
     "register_type",

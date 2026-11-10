@@ -262,6 +262,7 @@ be given at once. An unknown code exits with status 2 and suggests the closest o
           "message": "The PDF contains active content such as scripts or embedded files.",
           "check": "pdf",
           "details": {"reason": "active_content", "keywords": ["JS", "JavaScript"]},
+          "cwe": [{"id": "CWE-434", "name": "Unrestricted Upload of File with Dangerous Type"}],
           "verdict": "dangerous"
         }
       ],
@@ -293,7 +294,7 @@ be given at once. An unknown code exits with status 2 and suggests the closest o
 | `files[].skipped` | why an entry was not read: `symbolic link`, `directory cycle`, `not a regular file` |
 | `files[].error` | why a file could not be read (its verdict is `not_verified`) |
 | `files[].sha256`, `name`, `ok`, `size`, `detected_type`, `declared_type`, `checks_run`, `sanitized` | the [result](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#results) of the file. `ok` is the policy's result, not the verdict: an empty file in a scan has `ok: false` and the verdict `clean` |
-| `files[].errors[]` | every violation: `code`, `message`, `check`, `details`, `verdict` |
+| `files[].errors[]` | every violation: `code`, `message`, `check`, `details`, `cwe` (the [CWE mapping](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#cwe-mapping), `[]` when none), `verdict` |
 | `files[].sanitized_as` | when sanitized: `name`, `content_type`, `size`, `content_changed` |
 | `files[].saved`, `files[].save_error` | with `--save`: where it was written, or why not |
 | `summary` | counts per verdict, `skipped`, and `seconds` |

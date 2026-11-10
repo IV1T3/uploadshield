@@ -13,6 +13,7 @@ from typing import IO, TYPE_CHECKING, Any, TextIO
 from uploadshield import presets, web
 from uploadshield.core.types import format_size, get_type
 from uploadshield.core.upload import Upload
+from uploadshield.core.violations import cwe_for
 from uploadshield.engine import validate
 
 from ._json import dumps
@@ -364,6 +365,7 @@ def explain(args: argparse.Namespace, console: Console) -> int:
         data = [
             {"code": str(c), "verdict": CODE_INFO[c].verdict.value, "condition": CONDITIONS.get(c)}
             | {k: getattr(CODE_INFO[c], k) for k in ("title", "meaning", "cause", "relax")}
+            | {"cwe": [{"id": ref.id, "name": ref.name} for ref in cwe_for(str(c))]}
             for c in selected
         ]
         print(dumps({"codes": data}), file=console.out)
@@ -390,6 +392,9 @@ def _explain_one(code: Code, console: Console) -> None:
     print(f"{s.bold(str(code))}  {info.title} {s.dim(f'({verdict})')}", file=console.out)
     for label, text in (("what", info.meaning), ("why", info.cause), ("to allow", info.relax)):
         print(f"  {s.dim(f'{label:<9}')} {text}", file=console.out)
+    if refs := cwe_for(str(code)):
+        cwes = ", ".join(f"{ref.id} {ref.name}" for ref in refs)
+        print(f"  {s.dim('cwe'.ljust(9))} {cwes}", file=console.out)
     print("", file=console.out)
 
 

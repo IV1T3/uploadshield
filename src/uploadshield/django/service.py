@@ -316,7 +316,10 @@ def field_rejection(result: ValidationResult, policy: Policy, config: Config) ->
         result.name,
         result.file_type.mime if result.file_type else None,
         ",".join(result.codes),
-        extra={"upload": result.as_dict(include_details=True) | {"policy": policy.name}},
+        extra={
+            "upload": result.as_dict(include_details=True, include_cwe=True)
+            | {"policy": policy.name}
+        },
     )
     file_rejected.send(sender=None, result=result, policy=policy)
     return ValidationError(

@@ -46,6 +46,23 @@ def test_explain_lists_codes_and_suggests_spellings(cli: Cli) -> None:
     assert "executable" in entry["condition"]
 
 
+def test_explain_shows_cwe(cli: Cli) -> None:
+    run = cli("explain", "embedded_code")
+    assert "CWE-434" in run.out
+    assert "CWE-94" in run.out
+    data = cli("explain", "embedded_code", "--json").json()
+    assert [c["id"] for c in data["codes"][0]["cwe"]] == ["CWE-434", "CWE-94"]
+    # A code with no accurate CWE carries an empty list, not a missing key.
+    assert cli("explain", "file_empty", "--json").json()["codes"][0]["cwe"] == []
+
+
+def test_scan_json_carries_cwe(cli: Cli, samples: Path) -> None:
+    files = cli("scan", samples, "--json").json()["files"]
+    errors = [e for f in files for e in f.get("errors", [])]
+    php = next(e for e in errors if e["code"] == "embedded_code")
+    assert {c["id"] for c in php["cwe"]} == {"CWE-434", "CWE-94"}
+
+
 def verdict(data: bytes, name: str, *, scan: bool, policy=None) -> Verdict:
     policy = scan_policy() if scan else policy
     result = validate(Upload.from_bytes(data, name), policy)

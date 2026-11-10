@@ -45,12 +45,17 @@ class ValidationResult:
     def codes(self) -> tuple[str, ...]:
         return tuple(str(v.code) for v in self.violations)
 
-    def as_dict(self, *, include_details: bool = False) -> dict[str, Any]:
+    def as_dict(
+        self, *, include_details: bool = False, include_cwe: bool = False
+    ) -> dict[str, Any]:
         data: dict[str, Any] = {
             "field": self.field,
             "name": self.name,
             "ok": self.ok,
-            "errors": [v.as_dict(include_details=include_details) for v in self.violations],
+            "errors": [
+                v.as_dict(include_details=include_details, include_cwe=include_cwe)
+                for v in self.violations
+            ],
         }
         if include_details:
             data |= {

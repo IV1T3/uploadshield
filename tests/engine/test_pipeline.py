@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 
@@ -144,6 +145,36 @@ def test_result_serialisation() -> None:
     private = result.as_dict(include_details=True)
     assert private["detected_type"] == "image/png"
     assert private["errors"][0]["details"]["expected"] == [".png"]
+    # CWE is gated separately from details, so it never leaks into the client payload
+    # (include_details is what EXPOSE_DETAILS turns on) - only into logs/signals/CLI.
+    assert "cwe" not in public["errors"][0]
+    assert "cwe" not in private["errors"][0]
+    diagnostic = result.as_dict(include_details=True, include_cwe=True)
+    assert diagnostic["errors"][0]["cwe"] == [
+        {"id": "CWE-646", "name": "Reliance on File Name or Extension of Externally-Supplied File"},
+        {"id": "CWE-434", "name": "Unrestricted Upload of File with Dangerous Type"},
+    ]
+
+
+def test_cwe_mapping_is_complete_and_gated() -> None:
+    from uploadshield.core.violations import CWE, Code, CweRef, cwe_for
+
+    assert set(CWE) == set(Code)  # every code decides, even if to an empty tuple
+    for refs in CWE.values():
+        for ref in refs:
+            assert isinstance(ref, CweRef)
+            assert re.fullmatch(r"CWE-\d+", ref.id), ref.id
+            assert ref.name
+    assert cwe_for("embedded_code")[0].id == "CWE-434"
+    assert cwe_for("file_empty") == ()  # operational outcome: empty by design
+    assert cwe_for("a_custom_check_code") == ()  # unknown code never raises
+    # Not exposed on a bare Violation payload, nor under include_details alone.
+    v = Violation(Code.ARCHIVE_UNSAFE_PATH, "x")
+    assert "cwe" not in v.as_dict()
+    assert "cwe" not in v.as_dict(include_details=True)
+    assert v.as_dict(include_cwe=True)["cwe"] == [
+        {"id": "CWE-22", "name": "Improper Limitation of a Pathname to a Restricted Directory"}
+    ]
 
 
 def test_violation_value_semantics() -> None:

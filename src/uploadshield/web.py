@@ -196,13 +196,15 @@ def log_rejection(
     sha256: str | None = None,
 ) -> None:
     """Emit the structured warning every adapter logs for a refused file."""
-    details = result.as_dict(include_details=True)
+    details = result.as_dict(include_details=True, include_cwe=True)
     details |= {
         "field": field,
         "policy": policy_name,
         "path": path,
         "sha256": sha256,
-        "violations": [v.as_dict(include_details=True) for v in result.violations],
+        "violations": [
+            v.as_dict(include_details=True, include_cwe=True) for v in result.violations
+        ],
         "mode": mode,
     }
     logger.warning(
