@@ -1,34 +1,194 @@
-[tool.poetry]
-name = "django-middleware-fileuploadvalidation"
-version = "1.1.0"
-description = "A Django middleware to validate user file uploads and detect malicious content."
-authors = ["IV1T3 <alexander.groddeck@uni-hamburg.de>"]
+[project]
+name = "uploadshield"
+version = "2.0.0"
+description = "Content-aware validation and sanitization of file uploads for Django, Flask and FastAPI."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "IV1T3", email = "xandi98@web.de" }]
+requires-python = ">=3.11"
+keywords = ["django", "flask", "fastapi", "upload", "file", "validation", "sanitization", "security", "malware"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Security",
+    "Typing :: Typed",
+]
+# The engine is pure Python with no required dependencies; pick your framework extra.
+dependencies = []
 
-[tool.poetry.dependencies]
-python = "^3.11"
-django = "*"
-types-exifread = "^3.0.0.20240106"
-django-stubs = {extras = ["compatible-mypy"], version = "^4.2.7"}
-clamd = "^1.0.2"
-exifread = "^3.0.0"
-pdfid = "^1.1.3"
-yara-python = "4.2.3"
-quicksand = "^2.0.13"
-setuptools = "^69.0.3"
-python-magic = "^0.4.27"
-pillow = "^10.2.0"
-oletools = "^0.60.1"
+[project.optional-dependencies]
+django = ["django>=4.2"]
+flask = ["flask>=2.3"]
+fastapi = ["fastapi>=0.110", "python-multipart>=0.0.9"]
+images = ["pillow>=10.0"]
+yara = ["yara-python>=4.3"]
+magic = ["python-magic>=0.4.27"]
+# Google Magika (ML second opinion); its onnxruntime has no Python 3.15 wheels yet.
+magika = ["magika>=1.0; python_version < '3.15'"]
+all = [
+    "django>=4.2",
+    "flask>=2.3",
+    "fastapi>=0.110",
+    "python-multipart>=0.0.9",
+    "pillow>=10.0",
+    "yara-python>=4.3",
+    "python-magic>=0.4.27",
+    "magika>=1.0; python_version < '3.15'",
+]
 
+[project.scripts]
+uploadshield = "uploadshield.cli:main"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-pytest-cov = "*"
-mypy = "*"
-pip-audit = "*"
-ruff = "*"
-pre-commit = "^3.6.0"
+[project.urls]
+Homepage = "https://github.com/IV1T3/uploadshield"
+Issues = "https://github.com/IV1T3/uploadshield/issues"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0",
+    "pytest-django>=4.11",
+    "pytest-cov>=7.0",
+    "hypothesis>=6.140",
+    "ruff>=0.17,<0.18",
+    "ty>=0.0.99",
+    "django-stubs>=5.2",
+    "djangorestframework>=3.18.3",
+    "flask>=3.1",
+    "flask-wtf>=1.2",
+    "fastapi>=0.115",
+    "httpx2>=2.16",
+    "python-multipart>=0.0.20",
+    "magika>=1.0 ; python_full_version < '3.15'",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "uploadshield"
+# macOS Finder metadata must never ship inside the package.
+source-exclude = ["**/.DS_Store"]
+wheel-exclude = ["**/.DS_Store"]
+
+# --------------------------------------------------------------------------- #
+# Ruff
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = ["**/migrations/**"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "B",        # bugbear
+    "UP",       # pyupgrade
+    "SIM",      # simplify
+    "C4",       # comprehensions
+    "RUF",      # ruff-specific
+    "S",        # bandit (security)
+    "PT",       # pytest style
+    "DJ",       # django
+    "ANN",      # annotations
+    "PL",       # pylint
+    "PERF",     # perflint
+    "TRY",      # tryceratops
+    "RET",      # return
+    "PTH",      # use pathlib
+    "FBT",      # boolean traps
+    "LOG", "G", # logging
+    "N",        # naming
+    "TID",      # tidy imports
+    "TC",       # type-checking imports
+]
+ignore = [
+    "PLR0913",  # policies legitimately take many keyword-only options
+    "PLR2004",  # magic numbers are file-format constants here
+    "TRY003",   # long messages in exceptions are fine
+    "ANN401",   # Any is intentional at Django boundaries
+    "PLR0911",  # format sniffers are naturally a cascade of early returns
+    "PLC0415",  # optional dependencies (Pillow, yara, magic) are imported lazily
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/owasp/registry.py" = ["E501"]  # a table of OWASP recommendations
+"tests/**" = [
+    "S101", "S105", "S106", "S108", "S311", "S603", "ANN", "PLR2004", "FBT", "PLC0415",
+    "TC002", "TC003",  # runtime imports of typing helpers are fine in tests
+    "RUF012",  # Django Meta.fields lists
+    "PT012",
+    "PLR0917",  # parametrized tests take many positional arguments
+]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"mimetypes".msg = "mimetypes depends on the host OS; use uploadshield.core.types instead."
+
+[tool.ruff.lint.flake8-bugbear]
+# Frozen dataclasses: safe as shared defaults.
+extend-immutable-calls = [
+    "uploadshield.checks.FilenameCheck",
+    "uploadshield.core.sniffing.BuiltinSniffer",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["uploadshield"]
+
+# --------------------------------------------------------------------------- #
+# ty
+# --------------------------------------------------------------------------- #
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
+include = ["src", "tests", "examples"]
+
+[tool.ty.analysis]
+# yara-python ships no type information.
+allowed-unresolved-imports = ["yara"]
+
+[tool.ty.rules]
+possibly-unresolved-reference = "error"
+
+# --------------------------------------------------------------------------- #
+# pytest / coverage
+# --------------------------------------------------------------------------- #
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+DJANGO_SETTINGS_MODULE = "tests.django_site.settings"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+markers = [
+    "owasp(*items): verifies OWASP file upload recommendations (tests/owasp/registry.py)",
+    "engine: the framework-free engine (tests/engine)",
+    "scanners: ClamAV, YARA and Magika (tests/scanners)",
+    "cli: the uploadshield command (tests/cli)",
+    "django: the Django adapter (tests/adapters/django)",
+    "flask: the Flask adapter (tests/adapters/flask)",
+    "fastapi: the FastAPI adapter (tests/adapters/fastapi)",
+    "conformance: the example apps of all frameworks, byte-identical requests (tests/conformance)",
+    "meta: architecture, documentation and traceability (tests/meta)",
+]
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+source = ["uploadshield"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]

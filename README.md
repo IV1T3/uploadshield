@@ -1,140 +1,189 @@
-# django-middleware-fileuploadvalidation (DMF)
+# uploadshield
 
-This Django middleware provides robust validation and sanitization for file uploads. It is designed to ensure the security and integrity of files uploaded through Django applications by performing various checks, validations, and sanitization processes.
+Content-aware validation and sanitization of file uploads for Django, Flask and FastAPI.
 
-[![PyPI version](https://img.shields.io/pypi/v/django-middleware-fileuploadvalidation.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/django-middleware-fileuploadvalidation/)
-[![Downloads](https://img.shields.io/pypi/dw/django-middleware-fileuploadvalidation)](https://pypi.org/project/django-middleware-fileuploadvalidation/)
-[![GitHub](https://img.shields.io/github/license/IV1T3/django-middleware-fileuploadvalidation.svg)](LICENSE)
+Web frameworks hand you the filename and `Content-Type` of an upload as if they were
+facts. They are whatever the client sent: a PHP web shell named `cat.png` with
+`Content-Type: image/png` arrives as an image in Django, Flask and FastAPI alike.
+uploadshield judges the **bytes** instead. It detects the real format, checks it
+against what the endpoint accepts, looks inside documents and archives for active
+content, and can rewrite images so that hidden payloads and metadata are destroyed.
 
-> :warning: **Breaking Changes in Version 1.0.0**: We've introduced a significant update to the upload configuration method. This change transitions from a per-path basis in the settings.py to a more flexible per-view basis using decorators. You can now configure uploads directly at the view level using decorators, offering more granular control. Please update your implementations accordingly to accommodate these changes. Examples of the new configuration method can be found in the [Configuration](#configuration) section below.
+## Try it in 10 seconds
 
-## Features
-- **File Validation**: Checks file types, sizes, and signatures to verify the authenticity and integrity of uploaded files.
-- **File Sanitization**: Cleans and modifies files to remove potentially harmful content, ensuring safe file handling.
-- **Configurable Settings**: Flexible configuration options to customize validation and sanitization rules based on specific needs.
-- **Comprehensive Logging**: Detailed logging for audit trails and debugging.
-- **Support for Multiple File Types**: Custom handlers for different file types (images, documents, etc.) with tailored validation and sanitization logic.
+No code needed; [uv](https://docs.astral.sh/uv/) runs it straight from PyPI:
 
-## Installation
+```console
+$ uvx uploadshield scan uploads/
+uploads/
+  ✗ avatar.png  PHP script · 30 bytes
+      type_not_allowed  PHP script files are not allowed.
+      embedded_code  The file contains embedded code.  <?php
+  ? backup.tar.gz  gzip archive · 132 bytes
+      type_not_allowed  Its contents cannot be inspected: unpack it and scan the files, or add --clamav.
+  ! holiday.png  JPEG image · 14.6 KB
+      extension_mismatch  The file extension '.png' does not match its content (JPEG image).
+  ✗ invoice.pdf  PDF document · 293 bytes
+      pdf_active_content  The PDF contains active content such as scripts or embedded files.  JS, JavaScript
+  ✓ notes.txt  Plain text · 14 bytes
+  ✓ report.pdf  PDF document · 180 KB
 
+6 files in 0.0 s: 2 clean, 2 dangerous, 1 refused, 1 not verified.
+```
 
-This package can be installed via pip:
+`uploadshield validate FILE --policy NAME` shows exactly why a policy accepts or
+refuses a file. See the [command line guide](docs/cli.md).
+
+## What it protects against
+
+- **Disguised files**: scripts and executables named `.png` or `.pdf`. The format
+  comes from the content, never from the name.
+- **Dangerous names**: `shell.php.jpg`, `.htaccess`, `../../etc/passwd`, `CON.txt`,
+  bidi-override tricks, and their percent-encoded and fullwidth variants.
+- **Active documents**: PDFs with JavaScript or embedded files, Office files with
+  macros, DDE fields or remote templates, SVGs with scripts, XML with entity bombs.
+- **Archive attacks**: ZIP bombs, zip slip, symbolic links, deeply nested archives,
+  and members a server would run once extracted.
+- **Hidden payloads**: PHP in image metadata, polyglots such as GIFAR, CSV cells that
+  run commands through DDE (`=cmd|' /C calc'!A0`).
+- **Malware**, with ClamAV or your own YARA rules, and optionally Google's Magika model
+  for scripts disguised as data.
+
+It fails closed: a check that crashes, a file too large to inspect, an encrypted file
+or an unreachable virus scanner means a refusal. Image decoding needs Pillow, the
+`images` extra (`uvx --from "uploadshield[images]" uploadshield scan ...`); without it
+the command line warns that image checks are inactive. The
+[checks reference](docs/checks.md) lists everything each check catches, and what it
+does not.
+
+## Add it to your app
 
 ```bash
-pip install django-middleware-fileuploadvalidation
+uv add "uploadshield[django,images]"    # or [flask,images] or [fastapi,images]
 ```
 
-Then add `django_middleware_fileuploadvalidation.middleware.FileUploadValidationMiddleware` to the end of your `MIDDLEWARE` in settings.py.
+**Django**: every file is checked while the request body streams in, in views, forms,
+the admin and Django REST framework.
 
 ```python
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    ...,
-    'django_middleware_fileuploadvalidation.middleware.FileUploadValidationMiddleware',
-]
+# settings.py
+INSTALLED_APPS += ["uploadshield.django"]
+FILE_UPLOAD_HANDLERS = ["uploadshield.django.handlers.ValidatingUploadHandler"]
 
+# urls.py (root URLconf): answer refusals with 413/415/400, as JSON or HTML
+handler400 = "uploadshield.django.views.bad_request"
 ```
 
-### YARA rule matching
-DMF supports the detection of malicious files based on custom YARA signatures.
-Common document/PDF signature matching is already supported due to the integration of the [QuickSand](https://github.com/tylabs/quicksand) framework.
-Custom YARA signatures can be placed under `/vendor/yara/`. A collection of useful YARA signatures can be found in the [awesome-yara](https://github.com/InQuest/awesome-yara) repository. The validation module will scan all files in the directory and compile the respective signatures.
+**Flask**: every multipart request is checked before it reaches a view.
 
-### ClamAV virus scanning
-DMF also utilizes the ClamAV anti-virus engine. If you would like to enable ClamAV through DMF, follow our ClamAV installation instructions: [ClamAV Install Guide](https://github.com/IV1T3/django-middleware-fileuploadvalidation/blob/main/docs/_CLAMAV_INSTALL_GUIDE.md)
-
-## Configuration
-By default, the upload configuration is set to the following:
 ```python
-{
-    "clamav": False,
-    "file_size_limit": None,
-    "filename_length_limit": None,
-    "keep_original_filename": False,
-    "response_config": {
-        "error_func": HttpResponseForbidden,
-        "message": "File upload blocked",
-        "redirect_on_block": None,
-        "status": 403,
-    },
-    "sanitization": True,
-    "uploadlogs_mode": "blocked",
-    "whitelist_name": "RESTRICTED",
-    "whitelist": [],
-}
+from flask import Flask
+
+from uploadshield.flask import UploadShield
+
+app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # Werkzeug parses the body first
+UploadShield(app)
 ```
 
-The middleware can be configured by adding a decorator to the respective view function that should be protected. Each field can be individually configured by passing the respective parameter to the decorator.
+**FastAPI**: dependencies validate and sanitize uploads; `all_files()` covers the
+whole app.
 
 ```python
-from django.http import HttpResponseForbidden
+from typing import Annotated
 
-from django_middleware_fileuploadvalidation.decorators import file_upload_config
+from fastapi import Depends, FastAPI, UploadFile
 
-@file_upload_config()
-def upload_default_view(request):
-    # View logic for uploading files
-    ...
+from uploadshield.fastapi import UploadShield
 
-@file_upload_config(
-  file_size_limit=2000000,
-  keep_original_filename=True,
-  response_config={
-      "error_func": HttpResponseForbidden,
-      "message": "Please upload an image.",
-      "status": 403,
-  },
-  whitelist=["application/pdf"]
+shield = UploadShield()
+app = FastAPI(dependencies=[Depends(shield.all_files())])
+
+
+@app.post("/avatar")
+async def avatar(
+    file: Annotated[UploadFile, Depends(shield.file("sanitized_images"))],
+): ...  # re-encoded, renamed, with the content type detected from the bytes
+```
+
+That's it: every upload is now checked against the built-in `default` policy (common
+images, PDF, Office and OpenDocument files, text and CSV, audio and video, up to
+50 MB). Your code only receives files that passed; the others are answered with 413,
+415 or 400. On an existing site, start with `"MODE": "report"` to log would-be
+refusals without blocking anything.
+
+The guides cover every option: [Django](docs/django.md), [Flask](docs/flask.md),
+[FastAPI](docs/fastapi.md).
+
+## Decide what to accept
+
+A **policy** says which files an endpoint accepts. Pick a built-in one, or derive your
+own:
+
+```python
+from uploadshield import MB, Policy, presets
+
+AVATARS = presets.SANITIZED_IMAGES.replace(name="avatars", max_size=2 * MB)
+INVOICES = Policy(
+    name="invoices",
+    allowed_types={"application/pdf", "image/png", "image/jpeg"},
+    max_size=5 * MB,
 )
-def upload_pdf_view(request):
-    # View logic for uploading PDF files
-    ...
-
-@file_upload_config(
-  filename_length_limit=100,
-  response_config={
-      "message": "Please upload an image.",
-      "redirect_on_block": 'file_list',
-      "status": 403,
-  },
-  uploadlogs_mode='always',
-  whitelist_name='IMAGE_ALL',
-)
-def upload_image_view(request):
-    # View logic for uploading images
-    ...
 ```
 
-### Options
-  - `clamav`: ClamAV is an open source antivirus engine for detecting trojans, viruses, malware & other malicious threats. By default, ClamAV is disabled. However, if you want to enable it, you can do so by setting this to *True*.
-  - `file_size_limit`: Defines the maximum allowed file size in kilobytes (kB). Files larger than this limit will be rejected. By default, there is no file size limit set.
-  - `filename_length_limit`: Defines the maximum allowed character length of the file name. By default, there is no file length limit set.
-  - `keep_original_filename`: By default, DMF will rename the uploaded file to a random string. If you would like to keep the original filename, set this to *True*.
-  - `response_config`: Customizes the response behavior on file upload validation failure. Options include:
-    - error_func: The Django HttpResponse function to execute on failure. Default: HttpResponseForbidden.
-    - message: The message to display on failure. This utilizes the messaging framework of Django. The message can then be displayed in the redirected view. Default: "File upload blocked".
-    - redirect_on_block: The URL name to redirect to on failure. If this is set, the error_func will be ignored.
-    - Default: None.
-    - status: The HTTP status code to return on failure. Default: 403.
-  - `sanitization`: DMF supports sanitization of images and PDF documents. By default, DMF will block malicious files. However, activating the sanitization will instead sanitze files and upload them consequently.
-  - `uploadlogs_mode`: Uploads can also be logged, to better analyze attempts afterwards. There are three different stages, which can be logged. By default, this setting is set to 'blocked'.
-    - always: logs every upload attempt
-    - success: logs only successful uploads
-    - blocked: logs only blocked uploads
-  - `whitelist_name`: DMF provides pre-defined whitelists. These can be used to prevent certain files from being uploaded. Each view can use an individual whitelist. This allows to have multiple upload forms with different whitelists. The following whitelists are available. By default, the whitelist is set to 'RESTRICTIVE'.
-    - ALL: All files
-      - AUDIO_ALL: All audio files
-      - APPLICATION_ALL: All application files
-      - IMAGE_ALL: All image files
-      - TEXT_ALL: All text files
-      - VIDEO_ALL: All video files
-    - RESTRICTIVE: All restricted whitelists combined
-      - AUDIO_RESTRICTIVE: audio/mpeg
-      - APPLICATION_RESTRICTIVE: application/pdf
-      - IMAGE_RESTRICTIVE: image/gif, image/jpeg, image/png, image/tiff
-      - TEXT_RESTRICTIVE: text/plain
-      - VIDEO_RESTRICTIVE: video/mp4, video/mpeg
-  - `whitelist`: If you want to use a custom whitelist, you can define it here. The whitelist must be a list of strings. Each string must be a valid MIME type. For example: `["application/pdf", "image/png"]`. This setting will override the `whitelist_name` setting.
+| Built-in policy | Accepts | Size limit |
+|---|---|---|
+| `default` | everything below | 50 MB |
+| `images` | JPEG, PNG, GIF, WebP | 10 MB |
+| `sanitized_images` | the same, re-encoded and randomly renamed | 10 MB |
+| `pdf` | PDF | 25 MB |
+| `documents` | PDF, Word, Excel, PowerPoint, OpenDocument, text, CSV | 25 MB |
+| `media` | common audio and video formats | 500 MB |
+
+Use one per view (`@validate_uploads("pdf")` in Django and Flask,
+`shield.file("pdf")` in FastAPI), per URL pattern, or per form field. The
+[policy guide](docs/policies.md) covers allowed types, filename rules, tuning checks,
+virus scanners and sanitizers.
+
+## How it works
+
+![The client's upload is parsed by Django, Flask or FastAPI, which hands every file to
+uploadshield. uploadshield checks size, filename, the type proven by the bytes, the
+allow-list and the content, then sanitizes. Passing files reach your view; refused
+files never do, and the client receives a 400, 413 or 415.](docs/images/upload-flow.svg)
+
+- **Cheapest checks first.** A forbidden name is refused before any content is read;
+  expensive parsers only see files that passed the cheap checks.
+- **Your code only sees files that passed**, sanitized if the policy says so, with the
+  content type detected from the bytes.
+- **Every refusal is answered and recorded**: a stable code, a 400/413/415 response, a
+  structured log record and a signal or callback.
+
+[Concepts](docs/concepts.md) explains the model; [Architecture](docs/ARCHITECTURE.md)
+how it is built.
+
+## Documentation
+
+| Page | What you find there |
+|---|---|
+| [Concepts](docs/concepts.md) | how uploadshield works, in one read |
+| [Django](docs/django.md) · [Flask](docs/flask.md) · [FastAPI](docs/fastapi.md) | setup, every option, refusals, testing |
+| [Command line](docs/cli.md) | `scan`, `validate`, JSON output for CI |
+| [Policies](docs/policies.md) | choosing and configuring what to accept |
+| [Checks and sanitizers](docs/checks.md) | every check with all its options |
+| [Refusals](docs/refusals.md) | codes, status codes, messages, logs |
+| [Python API](docs/python-api.md) | using the engine directly, custom checks and types |
+| [All docs](docs/README.md) | the full map, and [`llms.txt`](llms.txt) for AI agents |
+
+## Security and compatibility
+
+- **Mapped to OWASP**: every recommendation of OWASP's File Upload Cheat Sheet and
+  every test case of its Unrestricted File Upload page, with its coverage and the tests
+  that prove it, is in [docs/OWASP.md](docs/OWASP.md).
+- **Supported**: Python 3.11+, Django 4.2+, Flask 2.3+, FastAPI 0.110+.
+- **No required dependencies.** Pillow, YARA, Magika and libmagic are optional extras.
+- **Typed** (`py.typed`), with about 2500 tests including property-based fuzzing.
+- **Coming from django-middleware-fileuploadvalidation 1.x?** See
+  [Migrating from 1.x](docs/migrating-from-1.x.md).
+
+Contributing: see [Development](docs/development.md). License: Apache-2.0.

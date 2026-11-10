@@ -1,0 +1,34 @@
+# uploadshield
+
+> Content-aware validation and sanitization of file uploads for Django, Flask and FastAPI, plus a command line. It detects the real format of an upload from its bytes, checks it against a per-endpoint allow-list (a policy), inspects formats for active content (macros, PDF JavaScript, SVG scripts, archive bombs, hidden code, polyglots) and can re-encode images and rename files. Python 3.11+, no required dependencies; extras: `django`, `flask`, `fastapi`, `images` (Pillow), `yara`, `magika`, `magic`. Install with `uv add "uploadshield[django,images]"` (or `flask`/`fastapi`).
+
+Facts to keep when integrating uploadshield:
+
+- Never trust the client's filename or `Content-Type`; uploadshield replaces the content type with the one detected from the bytes. Validate with a policy, not by extension.
+- Policies are immutable values: derive with `policy.replace(...)` / `policy.extend(...)`, refer to them by name (`"images"`), dotted path or object. Built-in names: `default`, `images`, `sanitized_images`, `pdf`, `documents`, `media`.
+- Django: install `ValidatingUploadHandler` in `FILE_UPLOAD_HANDLERS` and `handler400 = "uploadshield.django.views.bad_request"`; add `ValidatingStorage` for files saved outside requests. All settings live in the `UPLOADSHIELD` dict.
+- Flask: `UploadShield(app)` validates every multipart request; settings in `app.config["UPLOADSHIELD"]` (keys differ from Django's: `ENDPOINT_POLICIES`, not `VIEW_POLICIES`).
+- FastAPI: `shield.file(policy)` / `shield.files(policy)` validate and sanitize the `UploadFile` in place; `shield.all_files()` in `FastAPI(dependencies=...)` is the safety net. Mounted sub-apps need their own.
+- It fails closed where it can: a crashing check, a file too large to inspect, an encrypted file or an unreachable scanner is a refusal. It cannot inspect what it does not open: checks whose optional dependency is missing do nothing (image decoding needs the `images` extra), archives other than ZIP are not opened, and ZIP member contents are not validated. Field-level validators (`FileValidator`, `ValidatedFileField`, `ShieldedFile`) always enforce, whatever `MODE` is.
+- Refusals carry stable codes (e.g. `type_not_allowed`) and map to HTTP 413 (size), 415 (type) or 400.
+- Documentation and commands use `uv add` / `uv run` / `uvx`.
+
+## Docs
+
+- [Documentation home](docs/README.md): reading paths by goal and a map of every page.
+- [Concepts](docs/concepts.md): the model (upload, policy, result), type detection, wildcards, the check pipeline, fail closed, sanitization, modes, when each framework validates, glossary.
+- [Policies](docs/policies.md): built-in policies, every `Policy` option, allowed types and wildcards, filename rules, tuning and removing content checks, scanners, sanitizers, `replace`/`extend`, registering policies per framework, recipes, the table of all 61 registered file types.
+- [Checks and sanitizers](docs/checks.md): every check (`FileSize`, `FilenameCheck`, `AllowedTypes`, `ExtensionMatchesType`, `DeclaredTypeMatches`, `ArchiveSafety`, `OfficeMacros`, `XmlSafety`, `PdfActiveContent`, `SvgActiveContent`, `EmbeddedContent`, `ImageIntegrity`, `ClamAV`, `YaraRules`, `MagikaCheck`) and sanitizer (`ReencodeImage`, `RandomizeFilename`, `SafeFilename`) with all options, defaults, codes and details; exported constants.
+- [Refusals](docs/refusals.md): all 32 violation codes with HTTP status and CLI verdict, status rules, the error payload per framework, custom messages and translations, `EXPOSE_DETAILS`, the log record and its structured `extra`, signals and callbacks per framework.
+- [Django](docs/django.md): quickstart, the upload handler's streaming stages, `DEFAULT_POLICY`/`VIEW_POLICIES`, `@validate_uploads` (policy, `fields`, `mode`, `on_reject`), Django REST framework, `FileValidator`, `ValidatedFileField`, `on_reject="field"`, `ValidatingStorage`, `handler400` and `REJECTION_HANDLER`, signals and `get_upload_validation`, all 11 settings, all system check ids, testing, troubleshooting.
+- [Flask](docs/flask.md): quickstart, the `before_request` safety net, `ENDPOINT_POLICIES`, `@validate_uploads`, delivered files, `UploadRejected` and error handlers, `ShieldedFile` for Flask-WTF, signals and `get_upload_results`, all 7 settings, testing, troubleshooting.
+- [FastAPI](docs/fastapi.md): `UploadShield(...)` arguments, `file()`, `files()`, `all_files()`, in-place sanitization, the `HTTPException` payload, `on_rejected`, modes, authentication order and request size limits, testing, troubleshooting.
+- [Command line](docs/cli.md): `scan` (verdicts: clean, dangerous, refused, not verified), `validate` (policy trace, `--save`), `policies`, `explain`, which files are read, the `--json` document (schema 1), exit statuses, every option, CI recipes.
+- [Python API](docs/python-api.md): `validate()`, `Upload`, `ValidationResult`/`Violation`/`SanitizedFile`, `InspectedFile`, writing checks and sanitizers, sniffers, registering file types, `uploadshield.web` helpers for other frameworks, import locations.
+- [Migrating from 1.x](docs/migrating-from-1.x.md): replacing django-middleware-fileuploadvalidation, option by option.
+
+## Optional
+
+- [Architecture](docs/ARCHITECTURE.md): how the engine and adapters are built, with diagrams and design rationale.
+- [OWASP coverage](docs/OWASP.md): every recommendation of OWASP's File Upload Cheat Sheet and Unrestricted File Upload page with its coverage level and tests.
+- [Development](docs/development.md): working on uploadshield itself.

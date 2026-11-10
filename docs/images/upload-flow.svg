@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 372" width="900" height="372" role="img" aria-labelledby="t d">
+  <title id="t">How uploadshield fits into an upload</title>
+  <desc id="d">A client sends a file; the framework parses the request and hands every file to uploadshield, which checks size, name, type from the bytes, the allow-list and the content, then sanitizes it. Passing files reach your view with the detected content type and are re-checked on save; refused files never reach your code, and the client gets a 400, 413 or 415 response.</desc>
+  <style>
+svg { --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --line:#818b98; --panel:#f6f8fa;
+  --panel-edge:#d1d9e0; --accent:#0969da; --accent-soft:#ddf4ff; --accent-edge:#54aeff;
+  --ok:#1a7f37; --ok-soft:#dafbe1; --bad:#cf222e; --bad-soft:#ffebe9; --note:#fff8c5;
+  --note-edge:#d4a72c; }
+@media (prefers-color-scheme: dark) {
+  svg { --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --line:#7d8590; --panel:#151b23;
+    --panel-edge:#3d444d; --accent:#4493f8; --accent-soft:#0d2240; --accent-edge:#1f6feb;
+    --ok:#3fb950; --ok-soft:#0f2a1a; --bad:#f85149; --bad-soft:#2d1316; --note:#2b2410;
+    --note-edge:#9e6a03; }
+}
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica,
+  Arial, sans-serif; fill: var(--fg); }
+.card { fill: var(--bg); stroke: var(--panel-edge); }
+.title { font-size: 14px; font-weight: 600; }
+.label { font-size: 13px; }
+.small { font-size: 12px; fill: var(--muted); }
+.lane { font-size: 11px; font-weight: 600; letter-spacing: .08em; fill: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px; }
+.panel { fill: var(--panel); stroke: var(--panel-edge); }
+.shield { fill: var(--accent-soft); stroke: var(--accent-edge); }
+.shield-title { fill: var(--accent); font-size: 14px; font-weight: 600; }
+.step { fill: var(--bg); stroke: var(--accent-edge); }
+.num { fill: var(--accent); }
+.num-text { fill: var(--bg); font-size: 11px; font-weight: 700; }
+.ok-box { fill: var(--ok-soft); stroke: var(--ok); }
+.bad-box { fill: var(--bad-soft); stroke: var(--bad); }
+.note { fill: var(--note); stroke: var(--note-edge); }
+.wire { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.wire-accent { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.wire-ok { fill: none; stroke: var(--ok); stroke-width: 1.75; }
+.wire-bad { fill: none; stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.wire-return { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.boundary { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; }
+.lifeline { fill: none; stroke: var(--panel-edge); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.activation { fill: var(--accent-soft); stroke: var(--accent-edge); }
+.head-line { fill: var(--line); }
+.head-accent { fill: var(--accent); }
+.head-ok { fill: var(--ok); }
+.head-bad { fill: var(--bad); }
+.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+.ok-text { fill: var(--ok); }
+.bad-text { fill: var(--bad); }
+</style>
+  <defs><marker id="arrow-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-line" d="M0 0 L10 5 L0 10 z"/></marker><marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-accent" d="M0 0 L10 5 L0 10 z"/></marker><marker id="arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-ok" d="M0 0 L10 5 L0 10 z"/></marker><marker id="arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-bad" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+  <rect x="0.5" y="0.5" width="899" height="371" rx="12" class="card"/>
+  <text x="75" y="30" class="lane" text-anchor="middle">UNTRUSTED</text>
+  <text x="280" y="30" class="lane" text-anchor="middle">YOUR FRAMEWORK</text>
+  <text x="555" y="30" class="lane" text-anchor="middle">UPLOADSHIELD</text>
+  <text x="825" y="30" class="lane" text-anchor="middle">YOUR APPLICATION</text>
+  <rect x="15" y="48" width="120" height="124" rx="8" class="panel"/>
+  <text x="75.0" y="88.0" class="title" text-anchor="middle">Client</text>
+  <text x="75.0" y="106.0" class="small" text-anchor="middle">file bytes</text>
+  <text x="75.0" y="124.0" class="small" text-anchor="middle">filename</text>
+  <text x="75.0" y="142.0" class="small" text-anchor="middle">Content-Type</text>
+  <rect x="210" y="48" width="140" height="124" rx="8" class="panel"/>
+  <text x="280.0" y="88.0" class="title" text-anchor="middle">Django, Flask</text>
+  <text x="280.0" y="106.0" class="title" text-anchor="middle">or FastAPI</text>
+  <text x="280.0" y="124.0" class="small" text-anchor="middle">parse the</text>
+  <text x="280.0" y="142.0" class="small" text-anchor="middle">multipart body</text>
+  <path d="M135 110 L208 110" class="wire" marker-end="url(#arrow-line)"/>
+  <text x="172" y="102" class="small halo" text-anchor="middle">upload</text>
+  <rect x="420" y="48" width="270" height="284" rx="12" class="shield"/>
+  <text x="555" y="74" class="small" text-anchor="middle">every file, in this order</text>
+  <path d="M440 104 L440 300" class="wire-accent"/>
+  <rect x="452" y="88" width="222" height="30" rx="6" class="step"/>
+  <circle cx="440" cy="103" r="10" class="num"/>
+  <text x="440" y="107" class="num-text" text-anchor="middle">1</text>
+  <text x="464" y="108" class="label" text-anchor="start">Size limit</text>
+  <rect x="452" y="126" width="222" height="30" rx="6" class="step"/>
+  <circle cx="440" cy="141" r="10" class="num"/>
+  <text x="440" y="145" class="num-text" text-anchor="middle">2</text>
+  <text x="464" y="146" class="label" text-anchor="start">Filename, as sent and decoded</text>
+  <rect x="452" y="164" width="222" height="30" rx="6" class="step"/>
+  <circle cx="440" cy="179" r="10" class="num"/>
+  <text x="440" y="183" class="num-text" text-anchor="middle">3</text>
+  <text x="464" y="184" class="label" text-anchor="start">Type from the bytes</text>
+  <rect x="452" y="202" width="222" height="30" rx="6" class="step"/>
+  <circle cx="440" cy="217" r="10" class="num"/>
+  <text x="440" y="221" class="num-text" text-anchor="middle">4</text>
+  <text x="464" y="222" class="label" text-anchor="start">Allow-list; name fits type</text>
+  <rect x="452" y="240" width="222" height="30" rx="6" class="step"/>
+  <circle cx="440" cy="255" r="10" class="num"/>
+  <text x="440" y="259" class="num-text" text-anchor="middle">5</text>
+  <text x="464" y="260" class="label" text-anchor="start">Content: macros, scripts, bombs</text>
+  <rect x="452" y="278" width="222" height="30" rx="6" class="step"/>
+  <circle cx="440" cy="293" r="10" class="num"/>
+  <text x="440" y="297" class="num-text" text-anchor="middle">6</text>
+  <text x="464" y="298" class="label" text-anchor="start">Sanitize: re-encode, rename</text>
+  <path d="M350 110 L418 110" class="wire" marker-end="url(#arrow-line)"/>
+  <text x="384" y="102" class="small halo" text-anchor="middle">each file</text>
+  <rect x="760" y="48" width="130" height="124" rx="8" class="ok-box"/>
+  <text x="825.0" y="97.0" class="title" text-anchor="middle">Your view</text>
+  <text x="825.0" y="115.0" class="small" text-anchor="middle">sanitized file,</text>
+  <text x="825.0" y="133.0" class="small" text-anchor="middle">detected type</text>
+  <path d="M690 110 L758 110" class="wire-ok" marker-end="url(#arrow-ok)"/>
+  <text x="724" y="102" class="small ok-text halo" text-anchor="middle">passes</text>
+  <rect x="760" y="220" width="130" height="92" rx="8" class="panel"/>
+  <text x="825.0" y="253.0" class="title" text-anchor="middle">Storage</text>
+  <text x="825.0" y="271.0" class="small" text-anchor="middle">re-checked on</text>
+  <text x="825.0" y="289.0" class="small" text-anchor="middle">save (Django)</text>
+  <path d="M825 172 L825 218" class="wire" marker-end="url(#arrow-line)"/>
+  <text x="833" y="199" class="mono" text-anchor="start">save()</text>
+  <rect x="210" y="220" width="140" height="92" rx="8" class="bad-box"/>
+  <text x="280.0" y="253.0" class="title" text-anchor="middle">Refused</text>
+  <text x="280.0" y="271.0" class="small" text-anchor="middle">413 · 415 · 400</text>
+  <text x="280.0" y="289.0" class="small" text-anchor="middle">logged, signalled</text>
+  <path d="M420 266 L352 266" class="wire-bad" marker-end="url(#arrow-bad)"/>
+  <text x="386" y="258" class="small bad-text halo" text-anchor="middle">fails</text>
+  <path d="M210 266 L75 266 L75 174" class="wire-bad" marker-end="url(#arrow-bad)"/>
+  <text x="142" y="258" class="small bad-text halo" text-anchor="middle">JSON or HTML</text>
+</svg>

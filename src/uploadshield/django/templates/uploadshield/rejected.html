@@ -1,0 +1,15 @@
+{% load i18n %}<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>{% translate "Upload rejected" %}</title></head>
+<body>
+  <h1>{{ rejection.message }}</h1>
+  <ul>
+    {% for file in rejection.files %}
+      <li><strong>{{ file.name }}</strong>
+        <ul>{% for error in file.errors %}<li>{{ error.message }}</li>{% endfor %}</ul>
+      </li>
+    {% endfor %}
+  </ul>
+  <p><a href="javascript:history.back()">{% translate "Go back" %}</a></p>
+</body>
+</html>

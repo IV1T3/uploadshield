@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520" role="img" aria-labelledby="t d">
+  <title id="t">FastAPI: uploads are validated by dependencies</title>
+  <desc id="d">Starlette parses the form. The optional app or router dependency all_files() checks every file field that has no dependency of its own and sets the detected content type. An endpoint dependency shield.file(policy) validates its field in the thread pool and sanitizes the UploadFile in place. A refusal is an HTTPException with status 400, 413 or 415.</desc>
+  <style>
+svg { --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --line:#818b98; --panel:#f6f8fa;
+  --panel-edge:#d1d9e0; --accent:#0969da; --accent-soft:#ddf4ff; --accent-edge:#54aeff;
+  --ok:#1a7f37; --ok-soft:#dafbe1; --bad:#cf222e; --bad-soft:#ffebe9; --note:#fff8c5;
+  --note-edge:#d4a72c; }
+@media (prefers-color-scheme: dark) {
+  svg { --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --line:#7d8590; --panel:#151b23;
+    --panel-edge:#3d444d; --accent:#4493f8; --accent-soft:#0d2240; --accent-edge:#1f6feb;
+    --ok:#3fb950; --ok-soft:#0f2a1a; --bad:#f85149; --bad-soft:#2d1316; --note:#2b2410;
+    --note-edge:#9e6a03; }
+}
+text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica,
+  Arial, sans-serif; fill: var(--fg); }
+.card { fill: var(--bg); stroke: var(--panel-edge); }
+.title { font-size: 14px; font-weight: 600; }
+.label { font-size: 13px; }
+.small { font-size: 12px; fill: var(--muted); }
+.lane { font-size: 11px; font-weight: 600; letter-spacing: .08em; fill: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px; }
+.panel { fill: var(--panel); stroke: var(--panel-edge); }
+.shield { fill: var(--accent-soft); stroke: var(--accent-edge); }
+.shield-title { fill: var(--accent); font-size: 14px; font-weight: 600; }
+.step { fill: var(--bg); stroke: var(--accent-edge); }
+.num { fill: var(--accent); }
+.num-text { fill: var(--bg); font-size: 11px; font-weight: 700; }
+.ok-box { fill: var(--ok-soft); stroke: var(--ok); }
+.bad-box { fill: var(--bad-soft); stroke: var(--bad); }
+.note { fill: var(--note); stroke: var(--note-edge); }
+.wire { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.wire-accent { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.wire-ok { fill: none; stroke: var(--ok); stroke-width: 1.75; }
+.wire-bad { fill: none; stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.wire-return { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.boundary { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 4; }
+.lifeline { fill: none; stroke: var(--panel-edge); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.activation { fill: var(--accent-soft); stroke: var(--accent-edge); }
+.head-line { fill: var(--line); }
+.head-accent { fill: var(--accent); }
+.head-ok { fill: var(--ok); }
+.head-bad { fill: var(--bad); }
+.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 5px; stroke-linejoin: round; }
+.ok-text { fill: var(--ok); }
+.bad-text { fill: var(--bad); }
+</style>
+  <defs><marker id="arrow-line" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-line" d="M0 0 L10 5 L0 10 z"/></marker><marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-accent" d="M0 0 L10 5 L0 10 z"/></marker><marker id="arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-ok" d="M0 0 L10 5 L0 10 z"/></marker><marker id="arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head-bad" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+  <rect x="0.5" y="0.5" width="899" height="519" rx="12" class="card"/>
+  <rect x="15.0" y="20" width="110" height="52" rx="8" class="panel"/>
+  <text x="70.0" y="42.0" class="title" text-anchor="middle">Client</text>
+  <text x="70.0" y="60.0" class="small" text-anchor="middle">browser / API</text>
+  <rect x="150.0" y="20" width="160" height="52" rx="8" class="panel"/>
+  <text x="230.0" y="42.0" class="title" text-anchor="middle">FastAPI</text>
+  <text x="230.0" y="60.0" class="small" text-anchor="middle">Starlette form parser</text>
+  <rect x="325.0" y="20" width="190" height="52" rx="8" class="shield"/>
+  <text x="420.0" y="42.0" class="shield-title" text-anchor="middle">all_files()</text>
+  <text x="420.0" y="60.0" class="small" text-anchor="middle">app / router safety net</text>
+  <rect x="525.0" y="20" width="190" height="52" rx="8" class="shield"/>
+  <text x="620.0" y="42.0" class="shield-title" text-anchor="middle">shield.file(policy)</text>
+  <text x="620.0" y="60.0" class="small" text-anchor="middle">endpoint dependency</text>
+  <rect x="750.0" y="20" width="130" height="52" rx="8" class="panel"/>
+  <text x="815.0" y="42.0" class="title" text-anchor="middle">Your endpoint</text>
+  <text x="815.0" y="60.0" class="small" text-anchor="middle">async or sync</text>
+  <path d="M70 72 L70 500" class="lifeline"/>
+  <path d="M230 72 L230 500" class="lifeline"/>
+  <path d="M420 72 L420 500" class="lifeline"/>
+  <path d="M620 72 L620 500" class="lifeline"/>
+  <path d="M815 72 L815 500" class="lifeline"/>
+  <rect x="413" y="142" width="14" height="112" rx="3" class="activation"/>
+  <rect x="613" y="296" width="14" height="116" rx="3" class="activation"/>
+  <path d="M70 104 L228 104" class="wire" marker-end="url(#arrow-line)"/>
+  <text x="150.0" y="97" class="label halo" text-anchor="middle">multipart body</text>
+  <path d="M230 140 L418 140" class="wire" marker-end="url(#arrow-line)"/>
+  <text x="325.0" y="133" class="mono halo" text-anchor="middle">the parsed form</text>
+  <rect x="434" y="152" width="176" height="80" rx="6" class="note"/>
+  <text x="444" y="173" class="small" text-anchor="start">fields without their own</text>
+  <text x="444" y="190" class="small" text-anchor="start">dependency: validate in</text>
+  <text x="444" y="207" class="small" text-anchor="start">the thread pool; set the</text>
+  <text x="444" y="224" class="small" text-anchor="start">detected content type</text>
+  <path d="M230 294 L618 294" class="wire" marker-end="url(#arrow-line)"/>
+  <text x="425.0" y="287" class="mono halo" text-anchor="middle">its UploadFile</text>
+  <rect x="634" y="306" width="176" height="63" rx="6" class="note"/>
+  <text x="644" y="327" class="small" text-anchor="start">this field's policy:</text>
+  <text x="644" y="344" class="small" text-anchor="start">validate in the thread</text>
+  <text x="644" y="361" class="small" text-anchor="start">pool, then sanitize</text>
+  <path d="M620 412 L813 412" class="wire-ok" marker-end="url(#arrow-ok)"/>
+  <text x="717.5" y="405" class="mono halo ok-text" text-anchor="middle">sanitized UploadFile</text>
+  <path d="M620 462 L72 462" class="wire-bad" marker-end="url(#arrow-bad)"/>
+  <text x="345.0" y="455" class="mono halo bad-text" text-anchor="middle">refused by either: HTTPException → 400 / 413 / 415</text>
+</svg>
