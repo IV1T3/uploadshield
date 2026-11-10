@@ -19,7 +19,19 @@ from .core.violations import Code, Violation
 from .engine import validate
 from .policy import Policy
 
-__version__ = "2.0.0"
+
+def __getattr__(name: str) -> str:
+    # ``__version__`` comes from the installed package's metadata, so pyproject.toml
+    # is the only place it is written; read lazily, as importlib.metadata is slow.
+    if name == "__version__":
+        from importlib.metadata import PackageNotFoundError, version
+
+        try:
+            return version("uploadshield")
+        except PackageNotFoundError:  # a source tree that was never installed
+            return "0+unknown"
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
     "GB",

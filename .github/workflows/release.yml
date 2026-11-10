@@ -69,7 +69,7 @@ jobs:
         run: |
           wheel=$(ls dist/*.whl)
           shield() { uv run --isolated --no-project --with "$wheel" uploadshield "$@"; }
-          shield --version
+          test "$(shield --version)" = "uploadshield $(uv version --short)"
           shield policies > /dev/null
           # A PHP script disguised as an image must be reported as dangerous (exit 1).
           printf '<?php system($_GET["c"]); ?>' > "$RUNNER_TEMP/shell.png"

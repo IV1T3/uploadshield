@@ -31,6 +31,14 @@ def test_version(cli: Cli) -> None:
     assert run.out.strip() == f"uploadshield {__version__}"
 
 
+def test_the_reported_version_is_the_project_version() -> None:
+    # 2.1.0 shipped saying 2.0.0: the version must live in pyproject.toml alone.
+    import tomllib
+
+    pyproject = Path(__file__).parents[2] / "pyproject.toml"
+    assert __version__ == tomllib.loads(pyproject.read_text())["project"]["version"]
+
+
 @pytest.mark.parametrize(
     "argv",
     [(), ("scan",), ("frobnicate",), ("scan", "--colour", "x", "."), ("validate", "--policy")],
