@@ -246,7 +246,7 @@ be given at once. An unknown code exits with status 2 and suggests the closest o
 ```json
 {
   "schema": 1,
-  "version": "2.0.0",
+  "version": "2.1.1",
   "command": "scan",
   "policy": "scan",
   "files": [
