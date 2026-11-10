@@ -152,7 +152,12 @@ class SvgActiveContent(Check):
 # `\s*`) so the whole marker stays short enough to fit inside _OVERLAP, closing a
 # chunk-boundary split; the bound is wide enough that padding a call does not evade.
 _PHP_WS = rb"\s{0,40}"
-_PHP_AFTER = rb"(?:[$`]|[a-z_]\w{0,30}" + _PHP_WS + rb"\()"
+# A function or method call: an identifier then "(", allowing a leading "\" namespace and
+# one "Foo::bar" static step, so "\system(" and "Foo::bar(" read as code.  The parts are
+# bounded so the whole marker stays inside _OVERLAP (no chunk-boundary split), and it
+# needs a "(" or "::", so "\alpha" or "Foo bar" in prose is not a call.
+_PHP_CALL = rb"\\?[a-z_]\w{0,30}(?:::[a-z_]\w{0,30})?(?:" + _PHP_WS + rb"\(|::)"
+_PHP_AFTER = rb"(?:[$`]|" + _PHP_CALL + rb")"
 # PHP constructs that open a payload without a call: a short tag followed by one of these
 # is code, not prose ("if a <? b then c" has none of them).
 _PHP_KEYWORD = (
@@ -161,8 +166,8 @@ _PHP_KEYWORD = (
     rb"|var_dump|call_user_func|create_function|if|for|foreach|while|switch)\b"
 )
 # What may follow a bare ``<?`` short tag to make it code: a variable/backtick, "@", "(",
-# a comment, a PHP keyword, or a function call.
-_PHP_SHORT = rb"(?:[$`@(]|/[*/]|" + _PHP_KEYWORD + rb"|[a-z_]\w{0,30}" + _PHP_WS + rb"\()"
+# a comment, a PHP keyword, or a (possibly namespaced/static) call.
+_PHP_SHORT = rb"(?:[$`@(]|/[*/]|" + _PHP_KEYWORD + rb"|" + _PHP_CALL + rb")"
 # The full and echo tags are specific enough not to occur by chance in compressed media.
 _PHP_MEDIA = rb"<\?php\s|<\?=" + _PHP_WS + _PHP_AFTER
 # In text, also the short open tag ``<?`` when code (not prose) follows: PHP's include()

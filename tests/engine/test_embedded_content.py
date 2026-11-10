@@ -77,6 +77,9 @@ def test_media_with_embedded_php_is_refused() -> None:
         (b"<?@eval($_GET[0]);\n", "notes.txt"),
         # Padding the space between a call and its "(" must not evade (second review round).
         (b"notes\n<?= system" + b" " * 20 + b"($_GET[0]);\n", "notes.txt"),
+        # Namespaced and static calls after a short tag (fourth review round).
+        (b"notes\n<?\\system($_GET[0]);\n", "notes.txt"),
+        (b"notes\n<?Shell::run($_GET[0]);\n", "notes.txt"),
     ],
 )
 def test_php_tags_in_text_files_are_refused(data: bytes, name: str) -> None:
