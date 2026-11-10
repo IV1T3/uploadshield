@@ -29,7 +29,9 @@ _SVG_RULES: dict[str, re.Pattern[str]] = {
     "embedded document": re.compile(r"<\s*(?:iframe|embed|object|frame)\b"),
     "entity declaration": re.compile(r"<!entity|<!doctype[^<]*\["),
     "XSLT stylesheet": re.compile(r"<\?xml-stylesheet"),
-    "external resource": re.compile(r"href\s*=\s*[\"']?\s*(?:https?:)?//|@import\b"),
+    "external resource": re.compile(
+        r"href\s*=\s*[\"']?\s*(?:https?:)?//|@import\b|url\(\s*[\"']?\s*(?:https?:)?//"
+    ),
     "handler element": re.compile(r"<\s*(?:[a-z0-9_-]+:)?handler\b"),
     "CSS expression": re.compile(r"expression\s*\("),
     # SMIL animation that sets href or an on* event-handler attribute at runtime.
@@ -48,6 +50,26 @@ _EVENT_HANDLER = re.compile(
     r"(?:[\s/]+|(?<=[\"']))on[a-z]+\s*="
 )
 _URL_INVISIBLES = re.compile(r"[\t\n\r\x00]")
+_CSS_HEX_ESCAPE = re.compile(r"\\([0-9a-fA-F]{1,6})\s?")
+_CSS_ESCAPE = re.compile(r"\\([^\n])")
+
+
+def _strip_css_comments(text: str) -> str:
+    """Remove ``/* ... */`` comments in a single linear pass (a regex with ``.*?`` is
+    quadratic when many ``/*`` have no closing ``*/``).  An unterminated comment drops
+    the rest, as a CSS parser ignores it."""
+    if "/*" not in text:
+        return text
+    out: list[str] = []
+    i = 0
+    while (start := text.find("/*", i)) != -1:
+        out.append(text[i:start])
+        end = text.find("*/", start + 2)
+        if end == -1:
+            return "".join(out)
+        i = end + 2
+    out.append(text[i:])
+    return "".join(out)
 
 
 def _decode_markup(data: bytes) -> str:
@@ -58,7 +80,12 @@ def _decode_markup(data: bytes) -> str:
 
 def _normalize_markup(text: str) -> str:
     # Browsers decode character references and ignore tabs/newlines inside URLs, so
-    # "&#106;ava&#x09;script:" must be seen as "javascript:".
+    # "&#106;ava&#x09;script:" must be seen as "javascript:".  CSS inside <style> is read
+    # by the browser's CSS parser, which drops comments and decodes "\" escapes, so
+    # "expr/**/ession(" and "@im\port" must be seen as "expression(" and "@import".
+    text = _strip_css_comments(text)
+    text = _CSS_HEX_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), text)
+    text = _CSS_ESCAPE.sub(r"\1", text)
     return _URL_INVISIBLES.sub("", html.unescape(text)).lower()
 
 
@@ -100,13 +127,25 @@ class SvgActiveContent(Check):
 # function call) follows, so prose such as "if a <? b then c" is not flagged while
 # "<? system($_GET[0]) ?>" is.  ``<?xml``/``<?php``/``<?=`` have a non-space next byte,
 # so the leading ``\s`` keeps the XML declaration and the other tags out of this branch.
-_PHP_AFTER = rb"(?:[$`]|[a-z_]\w{0,30}\s*\()"  # a variable, a backtick, or a call
+# A variable, a backtick string, or a function call.  Whitespace is bounded so the whole
+# marker stays short enough to fit inside _OVERLAP, closing a chunk-boundary split.
+_PHP_AFTER = rb"(?:[$`]|[a-z_]\w{0,30}\s{0,8}\()"
+# PHP constructs that open a payload without a call: a short tag followed by one of these
+# is code, not prose ("if a <? b then c" has none of them).
+_PHP_KEYWORD = (
+    rb"(?:php|echo|print|require(?:_once)?|include(?:_once)?|eval|exit|die|assert|system|exec"
+    rb"|shell_exec|passthru|popen|proc_open|global|return|function|namespace|new|throw|print_r"
+    rb"|var_dump|call_user_func|create_function|if|for|foreach|while|switch)\b"
+)
+# What may follow a bare ``<?`` short tag to make it code: a variable/backtick, "@", "(",
+# a comment, a PHP keyword, or a function call.
+_PHP_SHORT = rb"(?:[$`@(]|/[*/]|" + _PHP_KEYWORD + rb"|[a-z_]\w{0,30}\s{0,8}\()"
 # The full and echo tags are specific enough not to occur by chance in compressed media.
-_PHP_MEDIA = rb"<\?php\s|<\?=\s{0,3}" + _PHP_AFTER
+_PHP_MEDIA = rb"<\?php\s|<\?=\s{0,8}" + _PHP_AFTER
 # In text, also the short open tag ``<?`` when code (not prose) follows: PHP's include()
-# runs it from a .txt or .csv.  Left out of the media pattern above, where the two bytes
-# "<?" plus a space and a letter turn up by chance in binary and would false-positive.
-_PHP_TEXT = _PHP_MEDIA + rb"|<\?\s{1,4}" + _PHP_AFTER
+# runs it from a .txt or .csv, with or without a space after "<?".  Left out of the media
+# pattern, where the two bytes "<?" plus code-like bytes turn up by chance in binary.
+_PHP_TEXT = _PHP_MEDIA + rb"|<\?\s{0,8}" + _PHP_SHORT
 _CODE_MARKERS = re.compile(
     _PHP_MEDIA + rb"|<script[\s>]"
     rb"|<%@\s*(?:page|language|import)\b|<jsp:"
@@ -116,7 +155,9 @@ _CODE_MARKERS = re.compile(
 )
 #: What a PHP ``include`` runs from *any* file, text included: the open and short tags.
 _INCLUDABLE_CODE = re.compile(_PHP_TEXT, re.IGNORECASE)
-_OVERLAP = 64
+# Larger than the longest possible marker above (~50 bytes), so a marker split across a
+# streamed chunk boundary is still wholly present in the carried overlap.
+_OVERLAP = 96
 _EOCD = b"PK\x05\x06"
 _CENTRAL_DIRECTORY = b"PK\x01\x02"
 _EOCD_SEARCH_WINDOW = 65_557  # 22-byte record + maximum comment length

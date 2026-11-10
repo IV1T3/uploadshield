@@ -67,6 +67,14 @@ def test_media_with_embedded_php_is_refused() -> None:
         (b"<? system($_GET['c']); ?>\n", "notes.txt"),
         (b"notes\n<?\nshell_exec($_GET[0]);\n", "notes.txt"),
         (b"name,amount\nx,<?\t`id`;\n", "data.csv"),
+        # No space after `<?`, a bare keyword, a comment first, or a variable: all PHP,
+        # all flagged after the security-review follow-up (2026-11-10).
+        (b"<?system($_GET[0]);\n", "notes.txt"),
+        (b"<?echo $_GET[0];\n", "notes.txt"),
+        (b"<?include($_GET[0]);\n", "data.csv"),
+        (b"<?$x=`id`;\n", "notes.txt"),
+        (b"<?/* hi */system($_GET[0]);\n", "notes.txt"),
+        (b"<?@eval($_GET[0]);\n", "notes.txt"),
     ],
 )
 def test_php_tags_in_text_files_are_refused(data: bytes, name: str) -> None:
@@ -83,6 +91,7 @@ def test_php_tags_in_text_files_are_refused(data: bytes, name: str) -> None:
         # The short-tag rule needs code to follow, so prose with a lone "<?" is fine.
         b"a ternary in C++: cond a <? b : c, and a <? d later\n",
         b"the <? token on its own, then prose, is not a tag here\n",
+        b"compare with a <? b and later x <? y inside running text\n",
     ],
 )
 def test_ordinary_text_passes(text: bytes) -> None:

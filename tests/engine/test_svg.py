@@ -34,6 +34,11 @@ SVG_POLICY = Policy(allowed_types={"image/svg+xml"})
         "<ev:handler>alert(1)</ev:handler>",
         "<style>rect{width:expression(alert(1))}</style>",
         "<style>@import url(http://evil.example/x.css);</style>",
+        # CSS obfuscation found by the security-review follow-up (2026-11-10): an
+        # external url(), a comment inside expression(), and a backslash-escaped @import.
+        "<style>rect{background:url(http://evil.example/a)}</style>",
+        "<style>rect{width:expr/**/ession(alert(1))}</style>",
+        r"<style>@im\port url(http://evil.example/x.css);</style>",
     ],
 )
 def test_svg_active_content(body: str) -> None:
@@ -77,13 +82,19 @@ def test_event_handlers_after_tricky_attributes(svg: bytes) -> None:
         '<animate attributeName="x" from="0" to="9" dur="1s"/>',
         '<set attributeName="orient" to="auto"/>',
         "<style>rect{fill:red;width:10px}</style>",
+        # A data: URI font and a fragment reference are not external resources.
+        "<style>@font-face{font-family:x;src:url(data:font/woff2;base64,AAAA)}</style>",
+        '<use href="#gradient"/>',
+        "<style>/* a theme comment */ rect{fill:blue}</style>",
     ],
 )
 def test_text_and_attribute_values_mentioning_on_are_fine(body: str) -> None:
     assert codes(corpus.svg(body), "a.svg", SVG_POLICY) == ()
 
 
-@pytest.mark.parametrize("unit", ["<a ", '<a b="', "<a", "<!doctype", "<set ", " b"])
+@pytest.mark.parametrize(
+    "unit", ["<a ", '<a b="', "<a", "<!doctype", "<set ", " b", "/*x", "*/", "\\41", "@im"]
+)
 def test_svg_rules_scan_in_linear_time(unit: str) -> None:
     import time
 

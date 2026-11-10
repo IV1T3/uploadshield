@@ -263,9 +263,10 @@ elements, the `<handler>` element, event-handler attributes (`onload=`, also aft
 attribute values containing `>`), `javascript:` and `data:text/html` URIs (also
 entity-encoded or split by tabs and newlines), `foreignObject`, embedded documents
 (`iframe`, `embed`, `object`), entity declarations, XSLT stylesheets, external
-references (`href="https://..."` and CSS `@import`), CSS `expression(...)`, and
-animations that set `href` or an `on...` handler. Applies to `image/svg+xml`, which no
-preset allows.
+references (`href="https://..."`, CSS `@import` and `url(https://...)`), CSS
+`expression(...)`, and animations that set `href` or an `on...` handler. CSS comments and
+backslash escapes are decoded first, so `expr/**/ession(` and `@im\port` are caught.
+Applies to `image/svg+xml`, which no preset allows.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
