@@ -2,8 +2,9 @@
 
 * Examples: every ``python`` block in README.md and docs/ compiles; the blocks of the
   reference pages run in a fresh interpreter, and a few are checked for what they do.
-* Links: every relative link (and ``#anchor``) in README.md, llms.txt and docs/ points
-  to an existing file and heading.
+* Links: every link into this repository from README.md, llms.txt and docs/ is an
+  absolute GitHub URL (PyPI shows the README, where relative links break) and points to
+  an existing file and heading.
 * Completeness: every public option - Policy fields, check and sanitizer fields,
   violation codes, Django and Flask settings, FastAPI arguments, CLI flags - appears on
   its page.
@@ -41,6 +42,12 @@ RUNNABLE = ["policies.md", "checks.md", "python-api.md"]
 _FENCE = re.compile(r"```.*?```", re.DOTALL)
 _PYTHON = re.compile(r"```python\n(.*?)^[ \t]*```", re.DOTALL | re.MULTILINE)
 _LINK = re.compile(r"\]\(([^)\s]+)\)")
+REPO = "https://github.com/IV1T3/uploadshield"
+#: Links to files of this repository: pages and folders on GitHub, raw images.
+_REPO_FILE = re.compile(
+    r"https://(?:github\.com/IV1T3/uploadshield/(?:blob|tree)/main"
+    r"|raw\.githubusercontent\.com/IV1T3/uploadshield/main)/(.+)"
+)
 _HEADING = re.compile(r"^(#{1,6}) +(.+?) *$", re.MULTILINE)
 
 
@@ -164,10 +171,18 @@ def links(page: Path) -> list[str]:
 def test_links_and_anchors_resolve(page: Path) -> None:
     broken = []
     for target in links(page):
-        if re.match(r"[a-z]+:", target):  # https:, mailto:
+        url, _, anchor = target.partition("#")
+        if url == REPO:  # the README as GitHub shows it
+            destination = README
+        elif match := _REPO_FILE.fullmatch(url):
+            destination = ROOT / match.group(1)
+        elif re.match(r"[a-z]+:", target):  # other sites, mailto:
             continue
-        path, _, anchor = target.partition("#")
-        destination = (page.parent / path).resolve() if path else page
+        elif url or page == README:
+            broken.append(f"{target}: use an absolute {REPO} URL (relative ones break on PyPI)")
+            continue
+        else:
+            destination = page  # an anchor on a docs page, which PyPI never shows
         if not destination.exists():
             broken.append(f"{target}: no such file")
         elif anchor and destination.suffix == ".md" and anchor not in anchors(destination):

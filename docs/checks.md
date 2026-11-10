@@ -2,8 +2,8 @@
 
 This is the reference for every check and sanitizer: what it catches, which files it
 applies to, every option with its default, and the violation codes it reports with
-their `details`. To combine them into policies, see [Policies](policies.md). To write
-your own, see [Writing a check](python-api.md#writing-a-check).
+their `details`. To combine them into policies, see [Policies](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md). To write
+your own, see [Writing a check](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#writing-a-check).
 
 All checks and sanitizers are frozen dataclasses: you configure them with keyword
 arguments, and they are hashable values like policies.
@@ -57,7 +57,7 @@ each violation it reports.
 
 Any check can also produce `check_failed`. That happens when it crashes
 (`details["reason"] == "crashed"`) or when a file exceeds its memory budget
-(`details["reason"] == "too_large"`); see [Fail closed](concepts.md#fail-closed).
+(`details["reason"] == "too_large"`); see [Fail closed](https://github.com/IV1T3/uploadshield/blob/main/docs/concepts.md#fail-closed).
 
 The first five checks are built from the policy's own fields (`max_size`, `filename`,
 `allowed_types`, `match_extension`, `match_declared_type`). The content checks are

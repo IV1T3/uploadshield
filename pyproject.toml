@@ -50,6 +50,7 @@ uploadshield = "uploadshield.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/IV1T3/uploadshield"
+Documentation = "https://github.com/IV1T3/uploadshield/blob/main/docs/README.md"
 Issues = "https://github.com/IV1T3/uploadshield/issues"
 
 [dependency-groups]

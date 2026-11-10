@@ -170,12 +170,12 @@ Originals that sanitizers replaced are closed. Werkzeug keeps the client's raw f
 
 In `enforce` mode a refused request raises `UploadRejected`, a Werkzeug
 `HTTPException` with status **413** (too large), **415** (wrong type) or **400**
-(everything else); see [Refusals](refusals.md) for every code. It renders as:
+(everything else); see [Refusals](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md) for every code. It renders as:
 
 - **JSON** when `Accept` contains `json` but not `text/html`, or the request sends
   `X-Requested-With: XMLHttpRequest`:
   `{"error": "upload_rejected", "message": ..., "files": [...]}`
-  ([payload](refusals.md#the-error-payload));
+  ([payload](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#the-error-payload));
 - **HTML** otherwise: a minimal escaped page (no template). Clients sending
   `Accept: */*` (curl's default) get HTML.
 
@@ -204,7 +204,7 @@ def upload_rejected(error: UploadRejected):
 
 Replace messages per code with [`MESSAGES`](#configuration-reference); set
 `EXPOSE_DETAILS` to include diagnostic details
-([Exposing details](refusals.md#exposing-details)).
+([Exposing details](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#exposing-details)).
 
 ## Flask-WTF forms: ShieldedFile
 
@@ -265,7 +265,7 @@ was validated (no multipart body, skipped view, `off` mode). Call it inside a re
 | Member | Description |
 |---|---|
 | `field` | form field name |
-| `result` | the [`ValidationResult`](python-api.md#results), with `result.sanitized` when the file was sanitized |
+| `result` | the [`ValidationResult`](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#results), with `result.sanitized` when the file was sanitized |
 | `policy_name` | name of the policy that judged the file |
 | `storage` | the original `FileStorage` as received |
 | `ok` | `result.ok` |
@@ -273,7 +273,7 @@ was validated (no multipart body, skipped view, `off` mode). Call it inside a re
 **Logging**: every refusal is a WARNING on the `uploadshield` logger with structured
 data in `record.upload`, including the SHA-256 for refusals by the hook and the
 decorator; see
-[The log record](refusals.md#the-log-record).
+[The log record](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#the-log-record).
 
 ## Configuration reference
 
@@ -312,7 +312,7 @@ def test_disguised_script_is_refused(app):
 Ask for JSON (`Accept: application/json`) to get the machine-readable payload. Results
 are kept per request (in `request.environ`), so several requests inside one pushed
 `app.app_context()` are each validated. To test a policy without HTTP, call
-`uploadshield.validate()` directly; see [Python API](python-api.md).
+`uploadshield.validate()` directly; see [Python API](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md).
 
 ## Good to know
 

@@ -93,7 +93,7 @@ downloads, attachments and fixtures.
 
 A file takes the worst verdict of its violations (dangerous before not verified before
 refused). Which code leads to which verdict is listed under
-[Violation codes](refusals.md#violation-codes); `uploadshield explain` shows it too.
+[Violation codes](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#violation-codes); `uploadshield explain` shows it too.
 When the output cannot show `✓` and `✗` (for example a cp1252 console) it prints `OK`
 and `X`.
 
@@ -151,7 +151,7 @@ $ curl -s https://example.com/report | uploadshield validate - --name report.pdf
 
 | `--policy` value | Example | Where it comes from |
 |---|---|---|
-| a built-in name | `--policy images` | `default`, `images`, `sanitized_images`, `pdf`, `documents`, `media`; see [Policies](policies.md#built-in-policies) |
+| a built-in name | `--policy images` | `default`, `images`, `sanitized_images`, `pdf`, `documents`, `media`; see [Policies](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md#built-in-policies) |
 | a dotted path | `--policy myproject.uploads.AVATARS` | a module-level `Policy` in your code |
 | a name from Django settings | `--django --policy invoices` | your project's `UPLOADSHIELD["POLICIES"]` |
 
@@ -292,7 +292,7 @@ be given at once. An unknown code exits with status 2 and suggests the closest o
 | `files[].verdict` | `clean`, `dangerous`, `refused`, `not_verified`; `null` for skipped entries |
 | `files[].skipped` | why an entry was not read: `symbolic link`, `directory cycle`, `not a regular file` |
 | `files[].error` | why a file could not be read (its verdict is `not_verified`) |
-| `files[].sha256`, `name`, `ok`, `size`, `detected_type`, `declared_type`, `checks_run`, `sanitized` | the [result](python-api.md#results) of the file. `ok` is the policy's result, not the verdict: an empty file in a scan has `ok: false` and the verdict `clean` |
+| `files[].sha256`, `name`, `ok`, `size`, `detected_type`, `declared_type`, `checks_run`, `sanitized` | the [result](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#results) of the file. `ok` is the policy's result, not the verdict: an empty file in a scan has `ok: false` and the verdict `clean` |
 | `files[].errors[]` | every violation: `code`, `message`, `check`, `details`, `verdict` |
 | `files[].sanitized_as` | when sanitized: `name`, `content_type`, `size`, `content_changed` |
 | `files[].saved`, `files[].save_error` | with `--save`: where it was written, or why not |

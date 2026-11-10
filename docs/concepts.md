@@ -2,8 +2,8 @@
 
 This page explains the ideas behind uploadshield: what a policy is, how a file is
 judged, what "fail closed" means, and when each framework runs the checks. Read it
-once before configuring anything. The framework guides ([Django](django.md),
-[Flask](flask.md), [FastAPI](fastapi.md)) and the [policy guide](policies.md) build on
+once before configuring anything. The framework guides ([Django](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md),
+[Flask](https://github.com/IV1T3/uploadshield/blob/main/docs/flask.md), [FastAPI](https://github.com/IV1T3/uploadshield/blob/main/docs/fastapi.md)) and the [policy guide](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md) build on
 these terms.
 
 **On this page**
@@ -55,7 +55,7 @@ result.codes  # ('type_not_allowed',)
   untrusted.
 - **`Policy`** says what is acceptable: allowed types, a size limit, filename rules,
   the checks to run and the sanitizers to apply. Policies are immutable values. You
-  derive new ones from old ones and refer to them by name. See [Policies](policies.md).
+  derive new ones from old ones and refer to them by name. See [Policies](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md).
 - **`ValidationResult`** is the outcome: `ok`, the list of **violations** (each with a
   stable `code`, a user-safe `message` and private `details`), the detected
   `file_type`, the checks that ran and, if the policy sanitizes, the sanitized file.
@@ -80,11 +80,11 @@ The type comes from the **content**, never from the name or the header:
    `text/plain` named `data.csv` becomes `text/csv`. The extension can never *change*
    the type, only refine it.
 3. The answer is looked up in a deterministic registry of 61 types (see
-   [Registered file types](policies.md#registered-file-types)). Python's `mimetypes`
+   [Registered file types](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md#registered-file-types)). Python's `mimetypes`
    module is not used, because its answers depend on the machine.
 
 If no type is found the file fails with `type_unknown`. You can register your own
-formats or plug in libmagic; see [Types and sniffers](python-api.md#types-and-sniffers).
+formats or plug in libmagic; see [Types and sniffers](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#types-and-sniffers).
 
 ## Allow-lists and wildcards
 
@@ -116,7 +116,7 @@ that finds a problem, so a forbidden name is refused before any content is read 
 expensive parsers only see files that passed the cheap checks. With `fail_fast=False`
 every check runs and you get every problem at once.
 
-The full list of checks and their options is in [Checks](checks.md).
+The full list of checks and their options is in [Checks](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md).
 
 ## Fail closed
 
@@ -196,7 +196,7 @@ applies in Flask and FastAPI. Only the early abort does not.
 | **check** | One rule of a policy (`FileSize`, `PdfActiveContent`, ...). It reports violations. |
 | **sanitizer** | A step that rewrites an accepted file (`ReencodeImage`, `RandomizeFilename`). |
 | **violation** | One problem found by a check: a `code`, a `message` and `details`. |
-| **code** | The stable identifier of a violation, e.g. `type_not_allowed`. See [Refusals](refusals.md). |
+| **code** | The stable identifier of a violation, e.g. `type_not_allowed`. See [Refusals](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md). |
 | **mode** | `enforce`, `report` or `off`: what an integration does with refused files. |
-| **verdict** | The command line's summary of a file: clean, dangerous, refused or not verified. See [CLI](cli.md). |
+| **verdict** | The command line's summary of a file: clean, dangerous, refused or not verified. See [CLI](https://github.com/IV1T3/uploadshield/blob/main/docs/cli.md). |
 | **preset** | A built-in policy: `default`, `images`, `sanitized_images`, `pdf`, `documents`, `media`. |

@@ -38,7 +38,7 @@ uploads/
 ```
 
 `uploadshield validate FILE --policy NAME` shows exactly why a policy accepts or
-refuses a file. See the [command line guide](docs/cli.md).
+refuses a file. See the [command line guide](https://github.com/IV1T3/uploadshield/blob/main/docs/cli.md).
 
 ## What it protects against
 
@@ -59,7 +59,7 @@ It fails closed: a check that crashes, a file too large to inspect, an encrypted
 or an unreachable virus scanner means a refusal. Image decoding needs Pillow, the
 `images` extra (`uvx --from "uploadshield[images]" uploadshield scan ...`); without it
 the command line warns that image checks are inactive. The
-[checks reference](docs/checks.md) lists everything each check catches, and what it
+[checks reference](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md) lists everything each check catches, and what it
 does not.
 
 ## Add it to your app
@@ -118,8 +118,8 @@ images, PDF, Office and OpenDocument files, text and CSV, audio and video, up to
 415 or 400. On an existing site, start with `"MODE": "report"` to log would-be
 refusals without blocking anything.
 
-The guides cover every option: [Django](docs/django.md), [Flask](docs/flask.md),
-[FastAPI](docs/fastapi.md).
+The guides cover every option: [Django](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md), [Flask](https://github.com/IV1T3/uploadshield/blob/main/docs/flask.md),
+[FastAPI](https://github.com/IV1T3/uploadshield/blob/main/docs/fastapi.md).
 
 ## Decide what to accept
 
@@ -148,7 +148,7 @@ INVOICES = Policy(
 
 Use one per view (`@validate_uploads("pdf")` in Django and Flask,
 `shield.file("pdf")` in FastAPI), per URL pattern, or per form field. The
-[policy guide](docs/policies.md) covers allowed types, filename rules, tuning checks,
+[policy guide](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md) covers allowed types, filename rules, tuning checks,
 virus scanners and sanitizers.
 
 ## How it works
@@ -156,7 +156,7 @@ virus scanners and sanitizers.
 ![The client's upload is parsed by Django, Flask or FastAPI, which hands every file to
 uploadshield. uploadshield checks size, filename, the type proven by the bytes, the
 allow-list and the content, then sanitizes. Passing files reach your view; refused
-files never do, and the client receives a 400, 413 or 415.](docs/images/upload-flow.svg)
+files never do, and the client receives a 400, 413 or 415.](https://raw.githubusercontent.com/IV1T3/uploadshield/main/docs/images/upload-flow.svg)
 
 - **Cheapest checks first.** A forbidden name is refused before any content is read;
   expensive parsers only see files that passed the cheap checks.
@@ -165,31 +165,31 @@ files never do, and the client receives a 400, 413 or 415.](docs/images/upload-f
 - **Every refusal is answered and recorded**: a stable code, a 400/413/415 response, a
   structured log record and a signal or callback.
 
-[Concepts](docs/concepts.md) explains the model; [Architecture](docs/ARCHITECTURE.md)
+[Concepts](https://github.com/IV1T3/uploadshield/blob/main/docs/concepts.md) explains the model; [Architecture](https://github.com/IV1T3/uploadshield/blob/main/docs/ARCHITECTURE.md)
 how it is built.
 
 ## Documentation
 
 | Page | What you find there |
 |---|---|
-| [Concepts](docs/concepts.md) | how uploadshield works, in one read |
-| [Django](docs/django.md) · [Flask](docs/flask.md) · [FastAPI](docs/fastapi.md) | setup, every option, refusals, testing |
-| [Command line](docs/cli.md) | `scan`, `validate`, JSON output for CI |
-| [Policies](docs/policies.md) | choosing and configuring what to accept |
-| [Checks and sanitizers](docs/checks.md) | every check with all its options |
-| [Refusals](docs/refusals.md) | codes, status codes, messages, logs |
-| [Python API](docs/python-api.md) | using the engine directly, custom checks and types |
-| [All docs](docs/README.md) | the full map, and [`llms.txt`](llms.txt) for AI agents |
+| [Concepts](https://github.com/IV1T3/uploadshield/blob/main/docs/concepts.md) | how uploadshield works, in one read |
+| [Django](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md) · [Flask](https://github.com/IV1T3/uploadshield/blob/main/docs/flask.md) · [FastAPI](https://github.com/IV1T3/uploadshield/blob/main/docs/fastapi.md) | setup, every option, refusals, testing |
+| [Command line](https://github.com/IV1T3/uploadshield/blob/main/docs/cli.md) | `scan`, `validate`, JSON output for CI |
+| [Policies](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md) | choosing and configuring what to accept |
+| [Checks and sanitizers](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md) | every check with all its options |
+| [Refusals](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md) | codes, status codes, messages, logs |
+| [Python API](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md) | using the engine directly, custom checks and types |
+| [All docs](https://github.com/IV1T3/uploadshield/blob/main/docs/README.md) | the full map, and [`llms.txt`](https://github.com/IV1T3/uploadshield/blob/main/llms.txt) for AI agents |
 
 ## Security and compatibility
 
 - **Mapped to OWASP**: every recommendation of OWASP's File Upload Cheat Sheet and
   every test case of its Unrestricted File Upload page, with its coverage and the tests
-  that prove it, is in [docs/OWASP.md](docs/OWASP.md).
+  that prove it, is in [docs/OWASP.md](https://github.com/IV1T3/uploadshield/blob/main/docs/OWASP.md).
 - **Supported**: Python 3.11+, Django 4.2+, Flask 2.3+, FastAPI 0.110+.
 - **No required dependencies.** Pillow, YARA, Magika and libmagic are optional extras.
 - **Typed** (`py.typed`), with about 2500 tests including property-based fuzzing.
 - **Coming from django-middleware-fileuploadvalidation 1.x?** See
-  [Migrating from 1.x](docs/migrating-from-1.x.md).
+  [Migrating from 1.x](https://github.com/IV1T3/uploadshield/blob/main/docs/migrating-from-1.x.md).
 
-Contributing: see [Development](docs/development.md). License: Apache-2.0.
+Contributing: see [Development](https://github.com/IV1T3/uploadshield/blob/main/docs/development.md). License: Apache-2.0.

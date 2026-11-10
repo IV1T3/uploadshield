@@ -98,20 +98,20 @@ inspected, but not those two.
 The type is always the one detected from the **content**. A PHP script named
 `photo.png` is a PHP script and fails `type_not_allowed`. All 61 types uploadshield
 knows are listed under [Registered file types](#registered-file-types); add your own
-with [`register_type()`](python-api.md#registering-a-file-type).
+with [`register_type()`](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#registering-a-file-type).
 
 ## Size limits and empty files
 
 | Field | Default | Meaning |
 |---|---|---|
 | `max_size` | `10 * MB` | The largest accepted file in bytes. `None` means no limit. Negative values raise `ValueError`. |
-| `allow_empty` | `False` | Let the size check accept files with zero bytes. Empty content has no detectable type, so the type check still refuses them with `type_unknown`; accepting empty files also needs a [sniffer](python-api.md#types-and-sniffers) that identifies them. |
+| `allow_empty` | `False` | Let the size check accept files with zero bytes. Empty content has no detectable type, so the type check still refuses them with `type_unknown`; accepting empty files also needs a [sniffer](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#types-and-sniffers) that identifies them. |
 
 The limit applies per file. Request-wide limits belong to the framework or the web
 server (`MAX_CONTENT_LENGTH` in Flask, the ASGI server for FastAPI, the web server in
 front of Django; Django's `DATA_UPLOAD_MAX_MEMORY_SIZE` does not count files). Django
 additionally has a per-file hard cap,
-[`MAX_UPLOAD_SIZE`](django.md#settings-reference), that applies to every view.
+[`MAX_UPLOAD_SIZE`](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md#settings-reference), that applies to every view.
 
 ## Filename rules
 
@@ -147,7 +147,7 @@ Unicode-normalized (fullwidth `ｐｈｐ`).
 
 To keep only safe characters in stored names, use the `SafeFilename` or
 `RandomizeFilename` [sanitizer](#sanitizers) instead of relaxing the rules. All
-options are described in [FilenameCheck](checks.md#filenamecheck).
+options are described in [FilenameCheck](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md#filenamecheck).
 
 ## Extension and declared type
 
@@ -158,7 +158,7 @@ options are described in [FilenameCheck](checks.md#filenamecheck).
 
 The declared type is never used to decide what a file *is*. The adapters replace it
 with the detected type before your code sees the file (in Django unless
-[`NORMALIZE_CONTENT_TYPE`](django.md#settings-reference) is `False`).
+[`NORMALIZE_CONTENT_TYPE`](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md#settings-reference) is `False`).
 
 ## Content checks
 
@@ -176,7 +176,7 @@ understands:
 | `EmbeddedContent` | images, audio, video; text files | PHP, script and server-side-include code; polyglots (GIFAR) |
 | `ImageIntegrity` | images Pillow can decode | corrupt images, decompression bombs |
 
-All options of every check are in [Checks](checks.md).
+All options of every check are in [Checks](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md).
 
 **Tuning one check.** Replace it in the tuple and keep the others:
 
@@ -229,12 +229,12 @@ SCANNED = presets.DOCUMENTS.extend(
 )
 ```
 
-- [`ClamAV`](checks.md#clamav) streams the file to `clamd` and fails closed when it is
+- [`ClamAV`](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md#clamav) streams the file to `clamd` and fails closed when it is
   unreachable.
-- [`YaraRules`](checks.md#yararules) matches your YARA rules (`uv add "uploadshield[yara]"`).
-- [`MagikaCheck`](checks.md#magikacheck) asks Google's Magika model whether text is
+- [`YaraRules`](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md#yararules) matches your YARA rules (`uv add "uploadshield[yara]"`).
+- [`MagikaCheck`](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md#magikacheck) asks Google's Magika model whether text is
   really a script (`uv add "uploadshield[magika]"`). It can only refuse, never accept.
-- Your own checks are small classes; see [Writing a check](python-api.md#writing-a-check).
+- Your own checks are small classes; see [Writing a check](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#writing-a-check).
 
 ## Sanitizers
 
@@ -246,7 +246,7 @@ SCANNED = presets.DOCUMENTS.extend(
 | `RandomizeFilename()` | Replaces the name with a random hex name and the canonical extension of the detected type: `3f9c2e....jpg`. |
 | `SafeFilename()` | Keeps a readable name made of `[A-Za-z0-9_.- ]`: `Résumé (final).PDF` becomes `Resume_final.pdf`. |
 
-Their options are in [Checks: sanitizers](checks.md#sanitizers). What a sanitizer
+Their options are in [Checks: sanitizers](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md#sanitizers). What a sanitizer
 produces is checked again: new names against the filename rules, new content against
 the content checks. A sanitizer that fails, or changes the type, refuses the file
 (`sanitization_failed`).
@@ -287,10 +287,10 @@ Register your own policies by name:
 
 | Integration | Where |
 |---|---|
-| Django | `UPLOADSHIELD = {"POLICIES": {"invoices": INVOICES}}` in settings; see [Django](django.md#settings-reference). |
-| Flask | `app.config["UPLOADSHIELD"] = {"POLICIES": {"invoices": INVOICES}}`; see [Flask](flask.md#configuration-reference). |
-| FastAPI | `UploadShield(policies={"invoices": INVOICES})`; see [FastAPI](fastapi.md#uploadshield). |
-| CLI | `uploadshield validate FILE --policy myproject.uploads.INVOICES`, or `--django` for Django's settings; see [CLI](cli.md#choosing-the-policy). |
+| Django | `UPLOADSHIELD = {"POLICIES": {"invoices": INVOICES}}` in settings; see [Django](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md#settings-reference). |
+| Flask | `app.config["UPLOADSHIELD"] = {"POLICIES": {"invoices": INVOICES}}`; see [Flask](https://github.com/IV1T3/uploadshield/blob/main/docs/flask.md#configuration-reference). |
+| FastAPI | `UploadShield(policies={"invoices": INVOICES})`; see [FastAPI](https://github.com/IV1T3/uploadshield/blob/main/docs/fastapi.md#uploadshield). |
+| CLI | `uploadshield validate FILE --policy myproject.uploads.INVOICES`, or `--django` for Django's settings; see [CLI](https://github.com/IV1T3/uploadshield/blob/main/docs/cli.md#choosing-the-policy). |
 
 Registered policies are added to the built-in ones. A registered policy with a
 built-in name (for example `"default"`) replaces the built-in one.
@@ -408,7 +408,7 @@ LOGOS = Policy(name="logos", allowed_types={"image/svg+xml", "image/png"})
 | `content_checks` | `tuple[Check, ...]` | `DEFAULT_CONTENT_CHECKS` | Format-specific checks; also applied to sanitized output. |
 | `checks` | `tuple[Check, ...]` | `()` | Additional checks run after the content checks (scanners, custom). |
 | `sanitizers` | `tuple[Sanitizer, ...]` | `()` | Applied in order to files that passed every check. |
-| `sniffer` | `Sniffer` | `BuiltinSniffer()` | Detects the type from content; see [Types and sniffers](python-api.md#types-and-sniffers). |
+| `sniffer` | `Sniffer` | `BuiltinSniffer()` | Detects the type from content; see [Types and sniffers](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#types-and-sniffers). |
 | `fail_fast` | `bool` | `True` | Stop at the first check that finds a problem. |
 | `name` | `str` | `""` | Shown in logs and the CLI; the key in registries. |
 
@@ -496,6 +496,6 @@ proven by content alone; they are refined from their parent by the file's extens
 | `application/wasm` | WebAssembly module | `.wasm` | executable |
 | `application/vnd.sqlite3` | SQLite database | `.sqlite` `.sqlite3` `.db` |  |
 
-[`ArchiveSafety`](checks.md#archivesafety) opens ZIP containers and tar archives
+[`ArchiveSafety`](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md#archivesafety) opens ZIP containers and tar archives
 (plain, gzip, bzip2, xz). 7-Zip and RAR archives are detected but not opened, and
 wildcards never match them.

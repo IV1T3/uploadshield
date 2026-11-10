@@ -367,7 +367,7 @@ How saving works:
 ## Refusals
 
 In `enforce` mode a refused request is answered with **413** (too large), **415**
-(wrong type) or **400** (everything else); see [Refusals](refusals.md) for every code.
+(wrong type) or **400** (everything else); see [Refusals](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md) for every code.
 
 The upload handler and storage raise `UploadRejected`, a subclass of both
 `MultiPartParserError` and `SuspiciousOperation`. Like Django's own `TooManyFilesSent`,
@@ -390,7 +390,7 @@ The default `REJECTION_HANDLER`, `uploadshield.django.responses.reject`, returns
   `X-Requested-With: XMLHttpRequest`;
 - **HTML** otherwise, rendered from the template `uploadshield/rejected.html`. Override
   it in your own templates directory; its context variable `rejection` is the
-  [payload](refusals.md#the-error-payload) (`rejection.message`, `rejection.files`,
+  [payload](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#the-error-payload) (`rejection.message`, `rejection.files`,
   each with `name` and `errors`, each with `code` and `message`). Without the app in
   `INSTALLED_APPS` a minimal built-in page is used.
 
@@ -417,12 +417,12 @@ accepts). `fallback_message` is flashed when there is nothing more specific.
 
 Messages can be replaced per code with [`MESSAGES`](#settings-reference), and
 `EXPOSE_DETAILS = True` adds diagnostic details to the payload; see
-[Exposing details](refusals.md#exposing-details).
+[Exposing details](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#exposing-details).
 
 ## Modes and gradual adoption
 
 `MODE` (globally) or `mode=` (per view) is `"enforce"`, `"report"` or `"off"`; see
-[Modes](concepts.md#modes-enforce-report-off). In `report` mode refused files reach
+[Modes](https://github.com/IV1T3/uploadshield/blob/main/docs/concepts.md#modes-enforce-report-off). In `report` mode refused files reach
 the view unchanged, while the log records and signals say what would have been
 refused. Field validators (`FileValidator`, `ValidatedFileField`) always enforce.
 
@@ -434,7 +434,7 @@ A safe way to adopt uploadshield in an existing project:
 2. Watch the logs, then tune `POLICIES` and `VIEW_POLICIES` (for example
    `"admin:*"`), so third-party views need no changes. `uploadshield validate FILE
    --django --policy NAME` shows exactly why a file is refused; see
-   [CLI](cli.md#choosing-the-policy).
+   [CLI](https://github.com/IV1T3/uploadshield/blob/main/docs/cli.md#choosing-the-policy).
 3. Switch to `MODE = "enforce"`, and add `ValidatingStorage` so code paths outside
    requests (tasks, imports) are covered too.
 4. Tighten single endpoints with decorators and fields with validators where a precise
@@ -488,13 +488,13 @@ no file needed checking), or `None` if the request was not validated. Views can 
 |---|---|
 | `field` | form field name |
 | `index` | position within that field (multiple files) |
-| `result` | the [`ValidationResult`](python-api.md#results) |
+| `result` | the [`ValidationResult`](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md#results) |
 | `policy_name` | name of the policy that judged the file |
 | `ok` | `result.ok` |
 | `sha256()` | hex SHA-256 of the uploaded bytes, or `None` for files refused while streaming |
 
 **Logging**: every refusal is a WARNING on the `uploadshield` logger with structured
-data in `record.upload`; see [The log record](refusals.md#the-log-record). Accepted
+data in `record.upload`; see [The log record](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#the-log-record). Accepted
 files are logged at DEBUG level.
 
 ## Settings reference
@@ -567,7 +567,7 @@ def test_report_mode_lets_files_through(): ...
 
 Ask for JSON (`Accept: application/json`) to get the machine-readable payload. To test
 a policy without HTTP, call `uploadshield.validate()` directly; see
-[Python API](python-api.md). To see why a file is refused under your project's
+[Python API](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md). To see why a file is refused under your project's
 settings, run `uv run uploadshield validate FILE --django --policy NAME`.
 
 ## Good to know

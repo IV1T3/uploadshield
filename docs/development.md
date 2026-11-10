@@ -71,4 +71,4 @@ the same files.
   framework; each adapter imports only its own; nothing imports the CLI.
   `tests/meta/test_architecture.py` enforces this.
 - Documentation and messages use `uv add` / `uv run` / `uvx`.
-- See [Architecture](ARCHITECTURE.md) for the design and its rationale.
+- See [Architecture](https://github.com/IV1T3/uploadshield/blob/main/docs/ARCHITECTURE.md) for the design and its rationale.

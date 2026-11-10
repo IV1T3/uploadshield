@@ -56,8 +56,8 @@ and safe to match in client code and tests. Messages are for people and may chan
 | `check_failed` | any check | 400 | not verified | A check could not finish: the file needs more memory than it may use (`details["reason"] == "too_large"`), or the check crashed (`"crashed"`). |
 
 "Reported by" is the check's `name` (the `check` field of the violation). The
-`details` of every code are listed with its check in [Checks](checks.md). The "CLI
-verdict" column is how [`uploadshield scan`](cli.md#verdicts) summarizes the code;
+`details` of every code are listed with its check in [Checks](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md). The "CLI
+verdict" column is how [`uploadshield scan`](https://github.com/IV1T3/uploadshield/blob/main/docs/cli.md#verdicts) summarizes the code;
 those marked * depend on the file. `type_not_allowed` is dangerous when the content is
 an executable or HTML; otherwise it is "refused" by `uploadshield validate` and "not
 verified" by `uploadshield scan` (a format the scan cannot open, such as a 7-Zip
@@ -107,10 +107,10 @@ How each integration delivers it:
 
 | | JSON when | Otherwise | Customise with |
 |---|---|---|---|
-| **Django** | `Accept` contains `json` but not `text/html`, or `X-Requested-With: XMLHttpRequest` | HTML, rendered from the template `uploadshield/rejected.html` | `REJECTION_HANDLER`, `on_reject=`, your own template; see [Django](django.md#refusals) |
-| **Flask** | the same rule | a minimal escaped HTML page (no template) | `@app.errorhandler(UploadRejected)`, `on_reject=`; see [Flask](flask.md#refusals) |
-| **FastAPI** | always | | an exception handler for `HTTPException`; see [FastAPI](fastapi.md#refusals) |
-| **CLI** | `--json` | human-readable report | see [CLI](cli.md#json-output) |
+| **Django** | `Accept` contains `json` but not `text/html`, or `X-Requested-With: XMLHttpRequest` | HTML, rendered from the template `uploadshield/rejected.html` | `REJECTION_HANDLER`, `on_reject=`, your own template; see [Django](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md#refusals) |
+| **Flask** | the same rule | a minimal escaped HTML page (no template) | `@app.errorhandler(UploadRejected)`, `on_reject=`; see [Flask](https://github.com/IV1T3/uploadshield/blob/main/docs/flask.md#refusals) |
+| **FastAPI** | always | | an exception handler for `HTTPException`; see [FastAPI](https://github.com/IV1T3/uploadshield/blob/main/docs/fastapi.md#refusals) |
+| **CLI** | `--json` | human-readable report | see [CLI](https://github.com/IV1T3/uploadshield/blob/main/docs/cli.md#json-output) |
 
 FastAPI wraps the payload in `HTTPException.detail`, so the response body is
 `{"detail": {"error": "upload_rejected", ...}}`. A client sending `Accept: */*` (curl's
@@ -253,5 +253,5 @@ large for a check are logged as warnings.
 Views can also read the outcome of the current request:
 `get_upload_validation(request)` in Django and `get_upload_results()` in Flask. Exact
 signatures and object fields are in the framework guides:
-[Django](django.md#observability), [Flask](flask.md#observability),
-[FastAPI](fastapi.md#refusals).
+[Django](https://github.com/IV1T3/uploadshield/blob/main/docs/django.md#observability), [Flask](https://github.com/IV1T3/uploadshield/blob/main/docs/flask.md#observability),
+[FastAPI](https://github.com/IV1T3/uploadshield/blob/main/docs/fastapi.md#refusals).

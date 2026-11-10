@@ -28,11 +28,11 @@ result.ok, result.codes, result.file_type
 
 `validate(upload, policy, *, sanitize=True) -> ValidationResult`
 
-- runs the policy's [pipeline](concepts.md#the-pipeline) and, if every check passes and
+- runs the policy's [pipeline](https://github.com/IV1T3/uploadshield/blob/main/docs/concepts.md#the-pipeline) and, if every check passes and
   `sanitize` is true, its sanitizers;
 - **never raises** for bad input: a check that crashes or runs out of budget becomes
   the violation `check_failed`, a sanitizer that fails becomes `sanitization_failed`
-  (see [Fail closed](concepts.md#fail-closed));
+  (see [Fail closed](https://github.com/IV1T3/uploadshield/blob/main/docs/concepts.md#fail-closed));
 - re-checks what sanitizers produced (new names against the filename rules, new
   content against the content checks);
 - leaves your stream open and at the position where it was. Non-seekable streams are
@@ -81,7 +81,7 @@ assert result.ok
 | `code` | stable identifier, e.g. `"type_not_allowed"` (a `Code` for built-in checks) |
 | `message` | user-safe text |
 | `check` | the `name` of the check that reported it |
-| `details` | read-only mapping with diagnostic data (see [Checks](checks.md)) |
+| `details` | read-only mapping with diagnostic data (see [Checks](https://github.com/IV1T3/uploadshield/blob/main/docs/checks.md)) |
 | `as_dict(include_details=False)` | `{code, message}`, plus `check` and `details` |
 
 **`SanitizedFile`**
@@ -236,7 +236,7 @@ The type of a file is detected from its content by the policy's `sniffer`:
 | Sniffer | Description |
 |---|---|
 | `BuiltinSniffer()` | The default: pure Python, deterministic, no dependencies. |
-| `MagicSniffer(head_size=64 * 1024)` | Uses libmagic (`uv add "uploadshield[magic]"`, plus the system library). Results that are not [registered types](policies.md#registered-file-types) count as unidentified. |
+| `MagicSniffer(head_size=64 * 1024)` | Uses libmagic (`uv add "uploadshield[magic]"`, plus the system library). Results that are not [registered types](https://github.com/IV1T3/uploadshield/blob/main/docs/policies.md#registered-file-types) count as unidentified. |
 | `ChainedSniffer(sniffers)` | Tries several sniffers in order; the first identification wins. Pass a **tuple**, so the policy stays hashable. |
 
 ```python
@@ -315,11 +315,11 @@ An integration for another framework turns its file objects into `Upload`s, call
 |---|---|
 | `resolve_policy(ref, policies)` | A `Policy` from a `Policy`, a registered name or a dotted path (`PolicyLookupError` otherwise). |
 | `status_code_for(results)` | 413, 415 or 400 for a list of refused results. |
-| `rejection_payload(results, *, include_details=False, messages=None, fields=None)` | The [error payload](refusals.md#the-error-payload) as a `dict`. |
+| `rejection_payload(results, *, include_details=False, messages=None, fields=None)` | The [error payload](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#the-error-payload) as a `dict`. |
 | `wants_json(accept, requested_with=None)` | Content negotiation: JSON or HTML. |
 | `html_rejection(payload)` | A minimal escaped HTML page for the payload. |
 | `json_safe(value)` | Details made JSON-compatible (sets become sorted lists, bytes hex). |
-| `log_rejection(result, *, field, policy_name, mode, path=None, sha256=None)` | The standard [log record](refusals.md#the-log-record). |
+| `log_rejection(result, *, field, policy_name, mode, path=None, sha256=None)` | The standard [log record](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#the-log-record). |
 | `sha256_of(stream)` | Hex SHA-256 of a seekable stream, restoring its position. |
 | `is_unused_file_input(name, stream)` | `True` for an empty `<input type="file">` (no name, no content). |
 

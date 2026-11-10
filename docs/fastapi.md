@@ -61,7 +61,7 @@ builds the dependencies. All arguments are keyword-only.
 | `policies` | `dict[str, Policy]` | `None` | Your policies by name, added to the built-in ones; a built-in name (even `"default"`) is replaced. |
 | `default_policy` | policy, name or dotted path | `"default"` | Policy for `file()`, `files()` and `all_files()` called without one. Resolved immediately; unknown names raise `ValueError`. |
 | `mode` | `"enforce"`, `"report"`, `"off"` | `"enforce"` | What validation does with refused files; see [Modes](#modes). Invalid values raise `ValueError`. |
-| `expose_details` | `bool` | `False` | Include detection details in error responses ([Exposing details](refusals.md#exposing-details)). |
+| `expose_details` | `bool` | `False` | Include detection details in error responses ([Exposing details](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#exposing-details)). |
 | `messages` | `dict[str, str]` | `None` | User-facing messages per violation code. |
 | `on_rejected` | `callable(request, rejected)` | `None` | Called with the request and a list of `(field, ValidationResult)` pairs for refused files, in `enforce` **and** `report` mode, before the error is raised. May be `async`. Use it for audit logs. |
 
@@ -139,7 +139,7 @@ response is done.
 ## Refusals
 
 In `enforce` mode a refusal raises `HTTPException` with status **413** (too large),
-**415** (wrong type) or **400** (everything else); see [Refusals](refusals.md) for
+**415** (wrong type) or **400** (everything else); see [Refusals](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md) for
 every code. The body is always JSON:
 
 ```json
@@ -187,7 +187,7 @@ shield = UploadShield(on_rejected=audit)
 
 Every refusal is also logged as a WARNING on the `uploadshield` logger with structured
 data in `record.upload`, including the SHA-256; see
-[The log record](refusals.md#the-log-record). FastAPI has no signals.
+[The log record](https://github.com/IV1T3/uploadshield/blob/main/docs/refusals.md#the-log-record). FastAPI has no signals.
 
 ## Modes
 
@@ -223,7 +223,7 @@ def test_disguised_script_is_refused():
 ```
 
 To test a policy without HTTP, call `uploadshield.validate()` directly; see
-[Python API](python-api.md).
+[Python API](https://github.com/IV1T3/uploadshield/blob/main/docs/python-api.md).
 
 ## Good to know
 
