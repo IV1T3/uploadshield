@@ -39,6 +39,12 @@ SVG_POLICY = Policy(allowed_types={"image/svg+xml"})
         "<style>rect{background:url(http://evil.example/a)}</style>",
         "<style>rect{width:expr/**/ession(alert(1))}</style>",
         r"<style>@im\port url(http://evil.example/x.css);</style>",
+        # Second security-review round (2026-11-10): a comment must not hide content
+        # outside <style>, and url()/href with a non-data scheme or backslashes is external.
+        "/* <script>alert(1)</script>",
+        "<style>rect{background:url(ftp://evil.example/a)}</style>",
+        r"<style>rect{background:url(http:\\evil.example\a)}</style>",
+        '<a href="vbscript:msgbox(1)"><rect width="9" height="9"/></a>',
     ],
 )
 def test_svg_active_content(body: str) -> None:
@@ -82,9 +88,12 @@ def test_event_handlers_after_tricky_attributes(svg: bytes) -> None:
         '<animate attributeName="x" from="0" to="9" dur="1s"/>',
         '<set attributeName="orient" to="auto"/>',
         "<style>rect{fill:red;width:10px}</style>",
-        # A data: URI font and a fragment reference are not external resources.
+        # A data: URI font/image, a fragment reference, and a relative path are not
+        # external resources and must pass.
         "<style>@font-face{font-family:x;src:url(data:font/woff2;base64,AAAA)}</style>",
-        '<use href="#gradient"/>',
+        '<image href="data:image/png;base64,iVBOR"/>',
+        '<use href="#gradient"/><rect fill="url(#gradient)"/>',
+        '<image href="photo.png"/>',
         "<style>/* a theme comment */ rect{fill:blue}</style>",
     ],
 )

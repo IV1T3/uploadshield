@@ -29,8 +29,12 @@ _SVG_RULES: dict[str, re.Pattern[str]] = {
     "embedded document": re.compile(r"<\s*(?:iframe|embed|object|frame)\b"),
     "entity declaration": re.compile(r"<!entity|<!doctype[^<]*\["),
     "XSLT stylesheet": re.compile(r"<\?xml-stylesheet"),
+    # An external resource: @import, or href=/url() pointing at a scheme other than the
+    # inert ones (data:, a #fragment, a relative path).  Backslashes are normalised to
+    # "/" first, so "url(http:\\e)" reads like "url(http://e)".
     "external resource": re.compile(
-        r"href\s*=\s*[\"']?\s*(?:https?:)?//|@import\b|url\(\s*[\"']?\s*(?:https?:)?//"
+        r"@import\b"
+        r"|(?:href\s*=|url\()\s*[\"']?\s*(?!data:)(?:[a-z][a-z0-9+.-]*:|//)"
     ),
     "handler element": re.compile(r"<\s*(?:[a-z0-9_-]+:)?handler\b"),
     "CSS expression": re.compile(r"expression\s*\("),
@@ -80,13 +84,23 @@ def _decode_markup(data: bytes) -> str:
 
 def _normalize_markup(text: str) -> str:
     # Browsers decode character references and ignore tabs/newlines inside URLs, so
-    # "&#106;ava&#x09;script:" must be seen as "javascript:".  CSS inside <style> is read
-    # by the browser's CSS parser, which drops comments and decodes "\" escapes, so
-    # "expr/**/ession(" and "@im\port" must be seen as "expression(" and "@import".
-    text = _strip_css_comments(text)
+    # "&#106;ava&#x09;script:" must be seen as "javascript:".  This view keeps ALL of the
+    # markup; it never drops content, so a marker is never hidden from the scan.
+    return _URL_INVISIBLES.sub("", html.unescape(text)).lower()
+
+
+def _normalize_css(text: str) -> str:
+    # A second view that undoes CSS obfuscation inside <style>: the browser's CSS parser
+    # drops comments and decodes "\" escapes, so "expr/**/ession(" and "@im\port" read as
+    # "expression(" and "@import".  This view may drop content (an unterminated comment),
+    # so it is only ever scanned *in addition* to _normalize_markup, never instead of it.
+    # Character references are decoded before and after, and "\" is normalised to "/" so
+    # "url(http:\\e)" reads like "url(http://e)".
+    text = _strip_css_comments(html.unescape(text))
     text = _CSS_HEX_ESCAPE.sub(lambda m: chr(int(m.group(1), 16)), text)
     text = _CSS_ESCAPE.sub(r"\1", text)
-    return _URL_INVISIBLES.sub("", html.unescape(text)).lower()
+    text = html.unescape(text).replace("\\", "/")
+    return _URL_INVISIBLES.sub("", text).lower()
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,8 +123,14 @@ class SvgActiveContent(Check):
 
     def run(self, file: InspectedFile) -> Iterator[Violation]:
         raw = _decode_markup(file.read(self.max_bytes))
-        text = _normalize_markup(raw)
-        found = [label for label, rule in _SVG_RULES.items() if rule.search(text)]
+        # The plain view keeps all the markup; the CSS view undoes <style> obfuscation but
+        # may drop content, so a rule fires on a match in *either* - the CSS view can only
+        # add detections, never hide one.
+        plain = _normalize_markup(raw)
+        css = _normalize_css(raw)
+        found = [
+            label for label, rule in _SVG_RULES.items() if rule.search(plain) or rule.search(css)
+        ]
         if _EVENT_HANDLER.search(raw):
             found.insert(0, "event handler attribute")
         if found:
@@ -127,9 +147,11 @@ class SvgActiveContent(Check):
 # function call) follows, so prose such as "if a <? b then c" is not flagged while
 # "<? system($_GET[0]) ?>" is.  ``<?xml``/``<?php``/``<?=`` have a non-space next byte,
 # so the leading ``\s`` keeps the XML declaration and the other tags out of this branch.
-# A variable, a backtick string, or a function call.  Whitespace is bounded so the whole
-# marker stays short enough to fit inside _OVERLAP, closing a chunk-boundary split.
-_PHP_AFTER = rb"(?:[$`]|[a-z_]\w{0,30}\s{0,8}\()"
+# A variable, a backtick string, or a function call.  Whitespace is bounded (not open
+# `\s*`) so the whole marker stays short enough to fit inside _OVERLAP, closing a
+# chunk-boundary split; the bound is wide enough that padding a call does not evade.
+_PHP_WS = rb"\s{0,40}"
+_PHP_AFTER = rb"(?:[$`]|[a-z_]\w{0,30}" + _PHP_WS + rb"\()"
 # PHP constructs that open a payload without a call: a short tag followed by one of these
 # is code, not prose ("if a <? b then c" has none of them).
 _PHP_KEYWORD = (
@@ -139,13 +161,13 @@ _PHP_KEYWORD = (
 )
 # What may follow a bare ``<?`` short tag to make it code: a variable/backtick, "@", "(",
 # a comment, a PHP keyword, or a function call.
-_PHP_SHORT = rb"(?:[$`@(]|/[*/]|" + _PHP_KEYWORD + rb"|[a-z_]\w{0,30}\s{0,8}\()"
+_PHP_SHORT = rb"(?:[$`@(]|/[*/]|" + _PHP_KEYWORD + rb"|[a-z_]\w{0,30}" + _PHP_WS + rb"\()"
 # The full and echo tags are specific enough not to occur by chance in compressed media.
-_PHP_MEDIA = rb"<\?php\s|<\?=\s{0,8}" + _PHP_AFTER
+_PHP_MEDIA = rb"<\?php\s|<\?=" + _PHP_WS + _PHP_AFTER
 # In text, also the short open tag ``<?`` when code (not prose) follows: PHP's include()
 # runs it from a .txt or .csv, with or without a space after "<?".  Left out of the media
 # pattern, where the two bytes "<?" plus code-like bytes turn up by chance in binary.
-_PHP_TEXT = _PHP_MEDIA + rb"|<\?\s{0,8}" + _PHP_SHORT
+_PHP_TEXT = _PHP_MEDIA + rb"|<\?" + _PHP_WS + _PHP_SHORT
 _CODE_MARKERS = re.compile(
     _PHP_MEDIA + rb"|<script[\s>]"
     rb"|<%@\s*(?:page|language|import)\b|<jsp:"
@@ -155,9 +177,10 @@ _CODE_MARKERS = re.compile(
 )
 #: What a PHP ``include`` runs from *any* file, text included: the open and short tags.
 _INCLUDABLE_CODE = re.compile(_PHP_TEXT, re.IGNORECASE)
-# Larger than the longest possible marker above (~50 bytes), so a marker split across a
-# streamed chunk boundary is still wholly present in the carried overlap.
-_OVERLAP = 96
+# Larger than the longest possible marker above (<=~115 bytes with the bounded
+# whitespace), so a marker split across a streamed chunk boundary is still wholly present
+# in the carried overlap.
+_OVERLAP = 160
 _EOCD = b"PK\x05\x06"
 _CENTRAL_DIRECTORY = b"PK\x01\x02"
 _EOCD_SEARCH_WINDOW = 65_557  # 22-byte record + maximum comment length
