@@ -270,7 +270,7 @@ payloads, against the engine and against Django, Flask and FastAPI.
 | `ufu.content-type.proxy` | The Content-Type is changed with a proxy. | see `content-type.untrusted` |  |
 | `ufu.detector.after-header` | Code after a valid header. | **enforced** | Formats are parsed completely; media and text are scanned to the end. |
 | `ufu.detector.comments` | Code in comments or other unused sections. | **enforced** | Media are scanned for code everywhere, not only where it would render. |
-| `ufu.detector.obfuscation` | Obfuscated or encoded payloads. | **partial** | Opening tags are found in any case and with any whitespace, and images can be rebuilt; code without a recognisable opening tag (e.g. a short `<?` tag) is not detected. |
+| `ufu.detector.obfuscation` | Obfuscated or encoded payloads. | **partial** | In text, PHP open tags - including the short `<?` tag when code follows - are found in any case and with any whitespace; in media the short tag is left out (its bytes occur by chance in binary), and images can be rebuilt. A payload with no opening tag at all is not code by itself and is not flagged. |
 | `ufu.detector.decompression` | Files that produce code once decompressed or processed. | **enforced** | Archive members are measured and their names checked, PDF object streams are decoded (or refused when they cannot be), and sanitized output - content and name - is checked again. |
 
 ### Other test cases

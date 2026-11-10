@@ -26,6 +26,14 @@ SVG_POLICY = Policy(allowed_types={"image/svg+xml"})
         '<image href="https://tracker.example/pixel.png"/>',
         '<use xlink:href="//evil.example/sprite.svg#a"/>',
         '<set attributeName="href" to="javascript:alert(1)"/>',
+        # Found by the adversarial evaluation (2026-11-10): SMIL event-handler set,
+        # the SVG Tiny handler element, and CSS-based script/resource loading.
+        '<set attributeName="onload" to="alert(1)"/>',
+        '<animate attributeName="onbegin" to="alert(1)"/>',
+        "<handler>alert(1)</handler>",
+        "<ev:handler>alert(1)</ev:handler>",
+        "<style>rect{width:expression(alert(1))}</style>",
+        "<style>@import url(http://evil.example/x.css);</style>",
     ],
 )
 def test_svg_active_content(body: str) -> None:
@@ -64,6 +72,11 @@ def test_event_handlers_after_tricky_attributes(svg: bytes) -> None:
         "<text>click on = here, or online=yes</text>",
         '<rect data-onload="1" aria-description="turn on=off"/>',
         '<text x="1">a > b; one=1</text>',
+        # Benign SMIL animation and styling must not trip the new rules above.
+        '<set attributeName="opacity" to="0"/>',
+        '<animate attributeName="x" from="0" to="9" dur="1s"/>',
+        '<set attributeName="orient" to="auto"/>',
+        "<style>rect{fill:red;width:10px}</style>",
     ],
 )
 def test_text_and_attribute_values_mentioning_on_are_fine(body: str) -> None:

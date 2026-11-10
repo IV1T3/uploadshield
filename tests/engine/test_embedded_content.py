@@ -62,6 +62,11 @@ def test_media_with_embedded_php_is_refused() -> None:
         (b"name,amount\nx,<?php system($_GET[0]); ?>\n", "data.csv"),
         (b"line one\n<?= `id` ?>\n", "notes.txt"),
         (b"a" * 3_000_000 + b"<?PHP\nsystem('id');", "big.txt"),
+        # Short open tag `<?` followed by code: found accepted by the adversarial
+        # evaluation (2026-11-10). Flagged only when code follows, not after prose.
+        (b"<? system($_GET['c']); ?>\n", "notes.txt"),
+        (b"notes\n<?\nshell_exec($_GET[0]);\n", "notes.txt"),
+        (b"name,amount\nx,<?\t`id`;\n", "data.csv"),
     ],
 )
 def test_php_tags_in_text_files_are_refused(data: bytes, name: str) -> None:
@@ -75,6 +80,9 @@ def test_php_tags_in_text_files_are_refused(data: bytes, name: str) -> None:
         b'Notes on XML: a <?xml version="1.0"?> declaration goes first.\n',
         b"if a <? b then c\nphp is a language, <?phpinfo is not a tag\n",
         b"Today we discussed the <script> tag and <?= in templates.\n",
+        # The short-tag rule needs code to follow, so prose with a lone "<?" is fine.
+        b"a ternary in C++: cond a <? b : c, and a <? d later\n",
+        b"the <? token on its own, then prose, is not a tag here\n",
     ],
 )
 def test_ordinary_text_passes(text: bytes) -> None:

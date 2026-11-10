@@ -29,9 +29,12 @@ _SVG_RULES: dict[str, re.Pattern[str]] = {
     "embedded document": re.compile(r"<\s*(?:iframe|embed|object|frame)\b"),
     "entity declaration": re.compile(r"<!entity|<!doctype[^<]*\["),
     "XSLT stylesheet": re.compile(r"<\?xml-stylesheet"),
-    "external resource": re.compile(r"href\s*=\s*[\"']?\s*(?:https?:)?//"),
-    "href animation": re.compile(
-        r"<\s*(?:set|animate)\b[^<]*attributename\s*=\s*[\"']?(?:xlink:)?href"
+    "external resource": re.compile(r"href\s*=\s*[\"']?\s*(?:https?:)?//|@import\b"),
+    "handler element": re.compile(r"<\s*(?:[a-z0-9_-]+:)?handler\b"),
+    "CSS expression": re.compile(r"expression\s*\("),
+    # SMIL animation that sets href or an on* event-handler attribute at runtime.
+    "animated attribute": re.compile(
+        r"<\s*(?:set|animate)\b[^<]*attributename\s*=\s*[\"']?(?:xlink:)?(?:href|on[a-z])"
     ),
 }
 #: An ``on...=`` attribute inside a start tag.  Attribute values are skipped as quoted
@@ -93,15 +96,26 @@ class SvgActiveContent(Check):
 # (a 3-byte "<?=" alone would, about once per 20 MB): PHP open and short-echo tags,
 # HTML scripts, JSP/ASP directives, server-side includes and PHAR stubs (polyglot
 # images that PHP deserializes through phar://).
+# The PHP short open tag ``<?`` is matched only when code (a variable, a backtick, or a
+# function call) follows, so prose such as "if a <? b then c" is not flagged while
+# "<? system($_GET[0]) ?>" is.  ``<?xml``/``<?php``/``<?=`` have a non-space next byte,
+# so the leading ``\s`` keeps the XML declaration and the other tags out of this branch.
+_PHP_AFTER = rb"(?:[$`]|[a-z_]\w{0,30}\s*\()"  # a variable, a backtick, or a call
+# The full and echo tags are specific enough not to occur by chance in compressed media.
+_PHP_MEDIA = rb"<\?php\s|<\?=\s{0,3}" + _PHP_AFTER
+# In text, also the short open tag ``<?`` when code (not prose) follows: PHP's include()
+# runs it from a .txt or .csv.  Left out of the media pattern above, where the two bytes
+# "<?" plus a space and a letter turn up by chance in binary and would false-positive.
+_PHP_TEXT = _PHP_MEDIA + rb"|<\?\s{1,4}" + _PHP_AFTER
 _CODE_MARKERS = re.compile(
-    rb"<\?php\s|<\?=\s{0,3}(?:[$`]|[a-z_]\w{0,30}\s*\()|<script[\s>]"
+    _PHP_MEDIA + rb"|<script[\s>]"
     rb"|<%@\s*(?:page|language|import)\b|<jsp:"
     rb"|<!--\s*#\s*(?:exec|include|echo|config|set|printenv)\b"
     rb"|__halt_compiler\s*\(\s*\)",
     re.IGNORECASE,
 )
-#: What a PHP ``include`` runs from *any* file, text included: open and short-echo tags.
-_INCLUDABLE_CODE = re.compile(rb"<\?php\s|<\?=\s{0,3}(?:[$`]|[a-z_]\w{0,30}\s*\()", re.IGNORECASE)
+#: What a PHP ``include`` runs from *any* file, text included: the open and short tags.
+_INCLUDABLE_CODE = re.compile(_PHP_TEXT, re.IGNORECASE)
 _OVERLAP = 64
 _EOCD = b"PK\x05\x06"
 _CENTRAL_DIRECTORY = b"PK\x01\x02"

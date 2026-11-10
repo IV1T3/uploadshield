@@ -276,13 +276,21 @@ def test_obfuscated_payloads_in_images(payload: bytes) -> None:
 
 
 @owasp("ufu.detector.obfuscation")
+def test_full_php_tag_in_media_is_refused() -> None:
+    assert codes(PNG + b"<?php system($_GET[0]); ?>", "a.png") == ("embedded_code",)
+
+
 def test_what_obfuscation_still_gets_through() -> None:
-    # The documented limit of "partial": short open tags carry too little signal to tell
-    # code from compressed pixels, and payloads without a tag are not code by themselves.
+    # The documented limit of "partial": in *media* the short open tag `<?` is left out,
+    # because the two bytes "<?" plus a space and a letter turn up by chance in a
+    # compressed image or video and would false-positive (the full `<?php` tag is caught).
+    # In *text*, where there are no such random bytes, the short tag IS caught
+    # (test_php_tags_in_text_files_are_refused). A payload with no tag is not code at all.
     assert codes(PNG + b"<? system($_GET[0]); ?>", "a.png") == ()
-    # Rebuilding the image removes them anyway.
+    assert codes(PNG + b"system($_GET[0]); // no tag", "a.png") == ()
+    # Rebuilding the image removes any trailing bytes anyway.
     result = validate(
-        Upload.from_bytes(PNG + b"<? system($_GET[0]); ?>", "a.png"), presets.SANITIZED_IMAGES
+        Upload.from_bytes(PNG + b"<? system($_GET[0]);", "a.png"), presets.SANITIZED_IMAGES
     )
     assert result.sanitized is not None
     assert b"<? system" not in (result.sanitized.data or b"")

@@ -259,11 +259,13 @@ for harmless view settings, and the scripts they would trigger are caught as
 ## SvgActiveContent
 
 Refuses SVG images that can run script or load external resources: `<script>`
-elements, event-handler attributes (`onload=`, also after attribute values containing
-`>`), `javascript:` and `data:text/html` URIs (also entity-encoded or split by tabs and
-newlines), `foreignObject`, embedded documents (`iframe`, `embed`, `object`), entity
-declarations, XSLT stylesheets, external references (`href="https://..."`) and
-animations that change `href`. Applies to `image/svg+xml`, which no preset allows.
+elements, the `<handler>` element, event-handler attributes (`onload=`, also after
+attribute values containing `>`), `javascript:` and `data:text/html` URIs (also
+entity-encoded or split by tabs and newlines), `foreignObject`, embedded documents
+(`iframe`, `embed`, `object`), entity declarations, XSLT stylesheets, external
+references (`href="https://..."` and CSS `@import`), CSS `expression(...)`, and
+animations that set `href` or an `on...` handler. Applies to `image/svg+xml`, which no
+preset allows.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -271,7 +273,7 @@ animations that change `href`. Applies to `image/svg+xml`, which no preset allow
 
 | Code | Details |
 |---|---|
-| `svg_active_content` | `found`: labels of what was found, from `event handler attribute`, `script element`, `script URI`, `foreignObject`, `embedded document`, `entity declaration`, `XSLT stylesheet`, `external resource`, `href animation` |
+| `svg_active_content` | `found`: labels of what was found, from `event handler attribute`, `script element`, `script URI`, `foreignObject`, `embedded document`, `entity declaration`, `XSLT stylesheet`, `external resource`, `handler element`, `CSS expression`, `animated attribute` |
 
 ## EmbeddedContent
 
