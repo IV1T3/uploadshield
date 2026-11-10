@@ -1344,7 +1344,7 @@ wheels = [
 
 [[package]]
 name = "uploadshield"
-version = "2.2.0"
+version = "2.2.1"
 source = { editable = "." }
 
 [package.optional-dependencies]
