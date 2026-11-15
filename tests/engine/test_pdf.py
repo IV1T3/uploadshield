@@ -444,40 +444,28 @@ def test_an_object_stream_dictionary_too_large_to_be_one_is_refused() -> None:
     assert time.perf_counter() - started < 3
 
 
-MEMORY_PROBE = """
-import resource, sys, zlib
-from uploadshield import Upload, presets, validate
-
-run = b" ".join(b"/K%d %d" % (i, i) for i in range(250_000))  # about 4 MB of ordinary tokens
-script = zlib.compress(b"4 0 << /S /JavaScript /JS (app.alert(1)) >>")
-stream = (
-    b"5 0 obj << /Type /ObjStm /N 1 /First 4 /Filter /FlateDecode /Length %d >>" % len(script)
-    + b"\\nstream\\n" + script + b"\\nendstream\\nendobj"
-)
-document = (
-    b"%PDF-1.7\\n1 0 obj << /Type /Catalog >> endobj\\n6 0 obj << " + run + b" >> endobj\\n"
-    + stream + b"\\ntrailer << /Root 1 0 R >>\\n%%EOF\\n"
-)
-assert validate(Upload.from_bytes(document, "a.pdf"), presets.PDF).codes == ("pdf_active_content",)
-peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss  # bytes on macOS, KiB elsewhere
-print(peak if sys.platform == "darwin" else peak * 1024)
-"""
-
-
 def test_long_runs_are_read_without_keeping_a_record_of_every_step() -> None:
     # The lexer steps over runs of ordinary tokens with one pattern.  Unless that
     # pattern is possessive, the regex engine keeps a record of every step in case it
     # has to go back: 600 MB for this 4 MB file, 3 GB for 25 MB (found on 2026-11-14).
-    # That memory is the engine's own, so it shows in the size of a process only.
-    import subprocess
-    import sys
+    # tracemalloc counts what the engine allocates, the same way on every platform
+    # (the peak size of a process is not: Linux hands a parent's on to its children).
+    import tracemalloc
 
-    pytest.importorskip("resource")
-    probe = subprocess.run(
-        [sys.executable, "-c", MEMORY_PROBE], capture_output=True, text=True, check=True
-    )
-    peak = int(probe.stdout.strip())
-    assert peak < 300_000_000, f"{peak // 1_000_000} MB"
+    run = b" ".join(b"/K%d %d" % (i, i) for i in range(250_000))  # about 4 MB
+    document = corpus.pdf(b"6 0 obj << " + run + b" >> endobj", objstm(KEYS))
+    already_tracing = tracemalloc.is_tracing()
+    if not already_tracing:
+        tracemalloc.start()
+    try:
+        tracemalloc.reset_peak()
+        assert refusal(document) == SCRIPT
+        peak = tracemalloc.get_traced_memory()[1]
+    finally:
+        if not already_tracing:
+            tracemalloc.stop()
+    megabytes = f"{peak // 1_000_000} MB for a file of {len(document) // 1_000_000} MB"
+    assert peak < 40 * len(document), megabytes  # about 10 times the file; it was 150
 
 
 def test_pdfs_without_object_streams_are_not_lexed() -> None:
