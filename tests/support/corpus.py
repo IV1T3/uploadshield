@@ -8,6 +8,7 @@ import io
 import lzma
 import struct
 import tarfile
+import warnings
 import zipfile
 import zlib
 
@@ -138,6 +139,17 @@ _OOXML_MAIN = {
         "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml",
     ),
 }
+
+
+def build_zip_with_repeated_names(entries: list[tuple[str, bytes]]) -> bytes:
+    """A ZIP that may list the same name more than once (readers pick either entry)."""
+    buf = io.BytesIO()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)  # zipfile: "Duplicate name"
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for name, data in entries:
+                zf.writestr(name, data)
+    return buf.getvalue()
 
 
 def build_zip(entries: dict[str, bytes], *, stored_first: bool = False) -> bytes:

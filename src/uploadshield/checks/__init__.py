@@ -58,8 +58,10 @@ __all__ = [
 #: the formats it understands, so the set is safe to run against any upload.
 DEFAULT_CONTENT_CHECKS: tuple[Check, ...] = (
     ArchiveSafety(),
-    OfficeMacros(),
+    # Before OfficeMacros, which reads the same parts with an XML parser and can only
+    # call a part with a document type "uncheckable": this check names the reason.
     XmlSafety(),
+    OfficeMacros(),
     PdfActiveContent(),
     SvgActiveContent(),
     EmbeddedContent(),

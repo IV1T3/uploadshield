@@ -819,9 +819,12 @@ UNRESTRICTED_UPLOAD_SECTIONS: tuple[Section, ...] = (
                 "ufu.detector.obfuscation",
                 "Obfuscated or encoded payloads.",
                 "partial",
-                "In text, PHP open tags - including the short `<?` tag when code follows - are "
-                "found in any case and with any whitespace; in media the short tag is left out "
-                "(its bytes occur by chance in binary), and images can be rebuilt. A payload "
+                "In text, PHP open tags - including the echo tag `<?=` whatever its expression "
+                "starts with, and the short `<?` tag when a statement follows - are found in any "
+                "case and with any whitespace; in media the short tag is left out (its bytes "
+                "occur by chance in binary), and images can be rebuilt. Office parts are read "
+                "with an XML parser, so character references, quoting and UTF-16 hide nothing; "
+                "XML and SVG in encodings that cannot be read reliably are refused. A payload "
                 "with no opening tag at all is not code by itself and is not flagged.",
             ),
             Item(

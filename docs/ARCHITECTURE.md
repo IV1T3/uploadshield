@@ -123,7 +123,7 @@ uploadshield/
 4. `ExtensionMatchesType`
 5. `DeclaredTypeMatches` (opt-in; browsers derive the header from the OS)
 6. `content_checks`, each format-specific and self-selecting via `applies()`:
-   `ArchiveSafety`, `OfficeMacros`, `XmlSafety`, `PdfActiveContent`,
+   `ArchiveSafety`, `XmlSafety`, `OfficeMacros`, `PdfActiveContent`,
    `SvgActiveContent`, `EmbeddedContent`, `ImageIntegrity`
 7. your `checks`, e.g. `ClamAV`, `YaraRules`, `MagikaCheck`
 
@@ -507,6 +507,14 @@ refuse.
 
 - Detection is format-aware, not an antivirus. For hostile environments, add
   `ClamAV(...)` and/or `YaraRules(...)` to `checks`.
+- PHP's short open tag `<?` is recognised in text by what follows it, not by a PHP
+  parser: it is found when a statement follows (a variable, a call, a keyword, a
+  bracket, a string, an operator, `;`), not when the code starts like prose (a constant,
+  then an operator). It only runs where `short_open_tag` is on and uploads are
+  `include`d. The echo tag `<?=`, which is always on, is found in text whenever code or
+  its closing `?>` follows within 200 bytes; in media, where its bytes occur by chance,
+  when an expression follows or it is closed within 100 bytes. Re-encoding images and
+  never including uploads are the mitigations that do not depend on recognising code.
 - PDF inspection decodes object streams, where actions can hide, within a byte budget:
   Flate (any window, zlib or raw), ASCIIHex and ASCII85. An object stream in any other
   encoding, or with a predictor, is refused rather than skipped. Page content and image

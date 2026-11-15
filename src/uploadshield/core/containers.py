@@ -15,10 +15,19 @@ from typing import IO, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import re
+    from collections.abc import Generator
 
     from .upload import InspectedFile
 
-__all__ = ["ZIP_ERRORS", "zip_entries", "zip_head", "zip_member", "zip_read", "zip_search"]
+__all__ = [
+    "ZIP_ERRORS",
+    "zip_chunks",
+    "zip_entries",
+    "zip_head",
+    "zip_member",
+    "zip_read",
+    "zip_search",
+]
 
 ZIP_ERRORS = (
     zipfile.BadZipFile,
@@ -71,20 +80,27 @@ def zip_entries(file: InspectedFile) -> list[zipfile.ZipInfo] | None:
     return archive.entries if archive is not None else None
 
 
-def _member(file: InspectedFile, member: str) -> tuple[_Archive, zipfile.ZipInfo] | None:
+def _member(
+    file: InspectedFile, member: str | zipfile.ZipInfo
+) -> tuple[_Archive, zipfile.ZipInfo] | None:
+    """``member`` is a name (the last entry of that name, as :mod:`zipfile` resolves it)
+    or one entry of the listing - the way to reach every entry when names repeat."""
     archive = _archive(file)
-    if archive is None or (info := archive.by_name.get(member)) is None:
+    if archive is None:
+        return None
+    info = member if isinstance(member, zipfile.ZipInfo) else archive.by_name.get(member)
+    if info is None:
         return None
     return None if archive.overlaps(info) else (archive, info)
 
 
-def zip_member(file: InspectedFile, member: str) -> zipfile.ZipInfo | None:
+def zip_member(file: InspectedFile, member: str | zipfile.ZipInfo) -> zipfile.ZipInfo | None:
     """A member that can be read safely (exists, does not overlap another one)."""
     found = _member(file, member)
     return found[1] if found is not None else None
 
 
-def _read(file: InspectedFile, member: str, length: int) -> bytes | None:
+def _read(file: InspectedFile, member: str | zipfile.ZipInfo, length: int) -> bytes | None:
     if (found := _member(file, member)) is None:
         return None
     archive, info = found
@@ -95,13 +111,35 @@ def _read(file: InspectedFile, member: str, length: int) -> bytes | None:
         return None
 
 
-def zip_head(file: InspectedFile, member: str, length: int) -> bytes | None:
+def zip_head(file: InspectedFile, member: str | zipfile.ZipInfo, length: int) -> bytes | None:
     """The first ``length`` uncompressed bytes of a member (``None`` if unreadable)."""
     return _read(file, member, length)
 
 
+def zip_chunks(file: InspectedFile, member: str | zipfile.ZipInfo) -> Generator[bytes, None, None]:
+    """A member's uncompressed bytes, in pieces (members may be large).
+
+    Yields nothing for a member that is missing or overlaps another one, and stops
+    where the member becomes unreadable: such archives are ``ArchiveSafety``'s business.
+    Read it to the end, or ``close()`` it, before reading anything else from ``file``.
+    """
+    if (found := _member(file, member)) is None:
+        return
+    archive, info = found
+    try:
+        with file.open(), archive.zip.open(info) as stream:
+            while chunk := stream.read(_CHUNK):
+                yield chunk
+    except ZIP_ERRORS:
+        return
+
+
 def zip_search(
-    file: InspectedFile, member: str, pattern: re.Pattern[bytes], *, overlap: int = 4096
+    file: InspectedFile,
+    member: str | zipfile.ZipInfo,
+    pattern: re.Pattern[bytes],
+    *,
+    overlap: int = 4096,
 ) -> bool:
     """Whether ``pattern`` occurs in a member, streamed in chunks (members may be large)."""
     if (found := _member(file, member)) is None:
@@ -120,7 +158,7 @@ def zip_search(
     return False
 
 
-def zip_read(file: InspectedFile, member: str, limit: int) -> bytes | None:
+def zip_read(file: InspectedFile, member: str | zipfile.ZipInfo, limit: int) -> bytes | None:
     """Read one member, decompressing at most ``limit`` bytes.
 
     Returns ``None`` if the member is missing, unreadable, larger than ``limit``, or

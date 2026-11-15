@@ -196,10 +196,34 @@ uninspected.
 ## OfficeMacros
 
 Refuses Office documents that run code or load remote content: VBA macros, ActiveX
-controls, ODF Basic and scripts, DDE fields in any Word part (body, headers, footers,
-footnotes, comments), Excel DDE links and formulas, DDE cells in CSV files
-(`=cmd|' /C calc'!A0`), VBA in legacy OLE2 files (`.doc`, `.xls`, `.ppt`), and remote
-templates and objects.
+controls, ODF Basic and scripts, DDE fields in any part of a Word document (body,
+headers, footers, footnotes, comments), Excel DDE links and formulas, DDE cells in CSV
+files (`=cmd|' /C calc'!A0`), CSV formulas that fetch or send data
+(`=HYPERLINK(...)`, `=WEBSERVICE(...)`), VBA in legacy OLE2 files (`.doc`, `.xls`,
+`.ppt`), and remote templates and objects.
+
+The parts of a document are read with an XML parser, whatever they are called: which
+part is the main document, a header or a sheet is decided by the document's
+relationships, not by its file names, and macro parts are recognised by their
+relationship type as well as by name. It therefore makes no difference how a field or a
+relationship is written (either kind of quotes, character references, CDATA sections,
+UTF-16), or whether a field's instruction is spread over several runs. When a name
+occurs twice in the archive, both entries are read. A part that Office may read
+differently than the check does - it declares a document type, or an encoding other
+than UTF-8 and UTF-16, or its XML declaration contradicts its bytes - makes the
+document uncheckable, which is a refusal.
+
+Parsing is bounded, so that a small upload cannot keep the parser busy or make it use
+gigabytes of memory. A part is only parsed when a search of its bytes finds something
+that could matter (a field, a DDE link, or a `|`); relationship parts always are. What
+is parsed must stay within these limits, or the document is uncheckable: elements
+nested at most 1,000 deep, no single tag, comment or processing instruction larger
+than 1 MiB, and at most 5 million elements in all parsed parts together.
+
+In CSV files a cell is read as a spreadsheet reads it: quoted cells may contain
+delimiters and line breaks, and since the delimiter of a file is not known (`;` in many
+locales, or what a `sep=` line names), a formula in an unquoted cell may run on past
+`,` and `;`. UTF-16 files are read too.
 
 Applies to Word, Excel and PowerPoint (OOXML and macro-enabled), OpenDocument text,
 spreadsheet and presentation, OLE2 compound documents and `text/csv`.
@@ -207,11 +231,12 @@ spreadsheet and presentation, OLE2 compound documents and `text/csv`.
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `block_external_references` | `bool` | `True` | Refuse relationships that load external content (attached templates, OLE objects, frames, sub-documents). Hyperlinks are fine. |
-| `max_part_bytes` | `int` | `16 MiB` | Largest relationship part read into memory; larger ones make the file `check_failed` (too large). DDE fields are searched in parts of any size. |
+| `max_part_bytes` | `int` | `16 MiB` | Largest relationship part read; larger ones make the file `check_failed` (too large). All other parts are read as a stream, at any size. |
+| `block_data_formulas` | `bool` | `True` | In CSV files, refuse formulas that call a function which fetches or sends data: `HYPERLINK`, `WEBSERVICE`, `FILTERXML`, `RTD`, `DDE`, `IMPORTXML`, `IMPORTDATA`, `IMPORTHTML`, `IMPORTFEED`, `IMPORTRANGE`. After `=` the call may be anywhere in the formula; after `+`, `-` or `@`, which also start numbers and ordinary text, only directly before its bracket. |
 
 | Code | When | Details |
 |---|---|---|
-| `office_macros` | macros, ActiveX, ODF scripts; DDE fields, links or formulas; a CSV DDE cell; a VBA project in OLE2 | `parts` (up to 10), when known |
+| `office_macros` | macros, ActiveX, ODF scripts; DDE fields, links or formulas; a CSV DDE cell or data formula; a part that cannot be checked; a VBA project in OLE2 | `parts` (up to 10), when known; `reason`: `"data_formula"` for a CSV data formula, `"uncheckable"` for parts that cannot be checked |
 | `office_external_reference` | a remote template or object | `targets` (up to 10) |
 
 XLM (Excel 4.0) macros in legacy `.xls` files are not detected.
@@ -219,17 +244,25 @@ XLM (Excel 4.0) macros in legacy `.xls` files are not detected.
 ## XmlSafety
 
 Refuses document type definitions (DTDs), which enable entity expansion ("billion
-laughs") and external entities (XXE). Applies to XML files and to the XML parts
-(`.xml`, `.rels`, `.vml`, `.xhtml`, `.htm`, `.html`, `.opf`, `.ncx`, `.svg`, `.rdf`,
-`.xsl`) of OOXML, ODF and EPUB files.
+laughs") and external entities (XXE). Applies to XML files and to the members of OOXML,
+ODF and EPUB files: every member whose name says XML (`.xml`, `.rels`, `.vml`, `.xhtml`,
+`.htm`, `.html`, `.opf`, `.ncx`, `.svg`, `.rdf`, `.xsl`), and every other member that
+is an XML document - which members a program parses is decided by the document's
+relationships and manifests, not by file extensions. When a name occurs twice in the
+archive, both entries are judged.
+
+The XML must be in an encoding that reads here as it does for a parser: UTF-8, UTF-16,
+UTF-32, or a single-byte encoding that leaves ASCII alone (ISO 8859, Windows-125x). XML
+that declares another one (UTF-7, ISO-2022-JP, Shift_JIS, EBCDIC, ...) could spell
+`<!DOCTYPE` with other bytes; it cannot be checked and is refused.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `head_bytes` | `int` | `64 KiB` | How far into each part to look for the prolog. A prolog longer than this is refused, because it cannot be decided. |
 
-| Code | Details |
-|---|---|
-| `xml_dtd` | `parts` (up to 10) |
+| Code | When | Details |
+|---|---|---|
+| `xml_dtd` | a DTD was found, or the XML could not be checked for one (a prolog longer than `head_bytes`, an encoding that cannot be read reliably) | `parts` (up to 10) |
 
 ## PdfActiveContent
 
@@ -239,6 +272,21 @@ matched exactly after decoding `#xx` obfuscation (`/J#61vaScript`), in the file 
 **and** inside object streams, where attackers hide them. Object streams are decoded
 completely (Flate, ASCIIHex, ASCII85); one that cannot be decoded, or that sits
 outside the file's object structure, makes the PDF uncheckable, which is a refusal.
+
+The check and a PDF reader must agree on what the file says. Names end at PDF
+white-space, which includes the NUL byte. The filters of an object stream are read from
+the entries of its own dictionary: text in strings, comments and nested values does not
+count. An object stream is uncheckable, and so refused, when its filters or decode
+parameters are given by reference, when a key is given twice, when its data is kept in
+another file, when its dictionary is larger than 64 KiB (a real one takes about a
+hundred bytes), or when its data stops before the end marker of a filter: where a
+stream ends in the file is not always certain, so data that may have been cut short is
+never read in part.
+
+Embedded files are also found by the `/EF` entry of their file specification, because
+the names `/EmbeddedFile` and `/EmbeddedFiles` are optional in a PDF (reported as the
+keyword `EF`). This follows `forbidden`: remove `EmbeddedFile` from it to allow
+attachments.
 
 `/OpenAction` and `/AA` are deliberately not refused: LaTeX and office suites use them
 for harmless view settings, and the scripts they would trigger are caught as
@@ -267,7 +315,15 @@ references (`href=`/`url(...)` with any scheme other than `data:`, a `#fragment`
 relative path, and CSS `@import`), CSS `expression(...)`, and animations that set `href`
 or an `on...` handler. The image is scanned both as-is and with CSS comments and
 backslash escapes decoded, so neither `/* ... */` nor `expr/**/ession(` nor `@im\port`
-hides anything. Applies to `image/svg+xml`, which no preset allows.
+hides anything. Element names are matched under any namespace prefix (`svg:script`,
+`_:script`, `x.y:script`, non-ASCII prefixes), and tags are read one attribute at a
+time, in linear time whatever the input. Applies to `image/svg+xml`, which no preset
+allows.
+
+The markup is read as UTF-8 or UTF-16, as browsers read it. An SVG that declares an
+encoding which can spell markup with other bytes, or drops bytes while decoding
+(ISO-2022-JP, Shift_JIS, UTF-7, ...), cannot be checked and is refused; single-byte
+encodings that leave ASCII alone (ISO 8859, Windows-125x) are read.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -275,18 +331,30 @@ hides anything. Applies to `image/svg+xml`, which no preset allows.
 
 | Code | Details |
 |---|---|
-| `svg_active_content` | `found`: labels of what was found, from `event handler attribute`, `script element`, `script URI`, `foreignObject`, `embedded document`, `entity declaration`, `XSLT stylesheet`, `external resource`, `handler element`, `CSS expression`, `animated attribute` |
+| `svg_active_content` | `found`: labels of what was found, from `event handler attribute`, `script element`, `script URI`, `foreignObject`, `embedded document`, `entity declaration`, `XSLT stylesheet`, `external resource`, `handler element`, `CSS expression`, `animated attribute`, `unsupported encoding` |
 
 ## EmbeddedContent
 
 Refuses files that smuggle server-side code or a second file format.
 
-- **In images, audio and video** it scans the whole file for PHP open and short-echo
-  tags, `<script>`, JSP and ASP directives, server-side includes and PHAR stubs (a web
+- **In images, audio and video** it scans the whole file for PHP open and echo tags,
+  `<script>`, JSP and ASP directives, server-side includes and PHAR stubs (a web
   shell in EXIF metadata, or appended to the image data), and refuses polyglots: a
-  ZIP archive appended to an image (GIFAR) or a PDF header near the start.
+  ZIP archive appended to an image (GIFAR) or a PDF header near the start. The three
+  bytes of the echo tag `<?=` also occur by chance in compressed data, so there it
+  counts when an expression follows (a variable, a backtick or a call, also behind
+  brackets, `@` or unary operators) or when it is closed by `?>` within 100 bytes.
 - **In text files** (`scan_text`) it refuses PHP tags anywhere, because PHP's
-  `include` runs them from a `.txt` or `.csv` too.
+  `include` runs them from a `.txt` or `.csv` too: the open tag `<?php`; the echo tag
+  `<?=`, which is always enabled, when a variable, a backtick, a call, an include or
+  the closing `?>` follows within 200 bytes, whatever the expression starts with; and
+  the short tag `<?` when a statement follows it. Text that only mentions the tags
+  ("the `<?=` tag") passes; text that shows code right after one is refused.
+
+The short tag `<?` needs PHP's `short_open_tag` setting and is recognised by what
+follows it, not by a PHP parser: a statement that starts like prose (a constant, then
+an operator) is not found. Re-encode images (`ReencodeImage`) and never `include`
+uploaded files.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
@@ -469,12 +537,12 @@ All importable from `uploadshield.checks`:
 
 | Constant | Contents |
 |---|---|
-| `DEFAULT_CONTENT_CHECKS` | The default `Policy.content_checks`: `ArchiveSafety()`, `OfficeMacros()`, `XmlSafety()`, `PdfActiveContent()`, `SvgActiveContent()`, `EmbeddedContent()`, `ImageIntegrity()`, in this order. |
+| `DEFAULT_CONTENT_CHECKS` | The default `Policy.content_checks`: `ArchiveSafety()`, `XmlSafety()`, `OfficeMacros()`, `PdfActiveContent()`, `SvgActiveContent()`, `EmbeddedContent()`, `ImageIntegrity()`, in this order. |
 | `DANGEROUS_EXTENSIONS` | 105 extensions servers or clients execute: PHP variants (`php`, `php3`-`php8`, `phtml`, `phar`, `pgif`, ...), ASP/.NET (`asp`, `aspx`, `ashx`, `asmx`, `cer`, `cshtml`, `svc`, ...), JSP and ColdFusion, CGI, Perl, Python, Ruby and shell scripts, Windows executables and scripts (`exe`, `dll`, `msi`, `scr`, `bat`, `cmd`, `vbs`, `js`, `ps1`, `hta`, `lnk`, `reg`, `chm`, ...), `jar`, `swf`, `xap`, `settingcontent-ms`, `iqy`, `slk`, `xll`, `htaccess`, `htpasswd`. |
 | `DANGEROUS_NAMES` | `.htaccess`, `.htpasswd`, `web.config`, `.user.ini`, `php.ini`, `crossdomain.xml`, `clientaccesspolicy.xml`. |
 | `WINDOWS_RESERVED_NAMES` | Windows device names: `con`, `prn`, `aux`, `nul`, `conin$`, `conout$`, `com0`-`com9`, `lpt0`-`lpt9`. |
 | `UNINSPECTED_ARCHIVES` | Archives no check opens: `application/x-7z-compressed`, `application/vnd.rar`. Wildcards (`application/*`) never match them, and `uploadshield scan` reports them as not verified. |
-| `DEFAULT_PDF_KEYWORDS` | `JavaScript`, `JS`, `Launch`, `EmbeddedFile`, `EmbeddedFiles`, `RichMedia`, `XFA`, `ImportData`, `SubmitForm`, `GoToE`. |
+| `DEFAULT_PDF_KEYWORDS` | `JavaScript`, `JS`, `Launch`, `EmbeddedFile`, `EmbeddedFiles`, `FileAttachment`, `RichMedia`, `XFA`, `ImportData`, `SubmitForm`, `GoToE`. |
 | `DEFAULT_MAGIKA_FORBIDDEN` | 38 Magika labels: executables (`pebin`, `elf`, `macho`, `msi`, `apk`, `jar`, `dex`, `wasm`, ...), scripts (`shell`, `batch`, `powershell`, `vba`, `javascript`, `python`, `php`, `perl`, `ruby`, `lua`, ...), and `html`, `svg`, `mht`, `htaccess`, `lnk`, `winregistry`. |
 | `MAGIKA_EQUIVALENTS` | Magika labels and the MIME type each means (`html` is `text/html`, `php` is `application/x-httpd-php`, ...). A label is not refused when it is the type the policy accepted. |
 

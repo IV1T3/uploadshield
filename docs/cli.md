@@ -104,7 +104,7 @@ $ uploadshield validate uploads/gps.jpg --policy sanitized_images --save out
 ✓ uploads/gps.jpg  accepted by "sanitized_images"
   detected   JPEG image (image/jpeg), 791 bytes
   checks     ✓ size  ✓ filename  ✓ type  ✓ extension  ✓ embedded  ✓ image
-             not applicable: archive, office, xml, pdf, svg
+             not applicable: archive, xml, office, pdf, svg
   sanitized  reencode_image, randomize_filename → e0e0f5b8b5984ed99f5b53068bedd63f.jpg (image/jpeg, 678 bytes, rewritten)
   saved      out/e0e0f5b8b5984ed99f5b53068bedd63f.jpg
 ```
@@ -114,7 +114,7 @@ $ uploadshield validate uploads/avatar.png --policy images
 ✗ uploads/avatar.png  refused by "images" (dangerous)
   detected   PHP script (application/x-httpd-php), 30 bytes
   checks     ✓ size  ✓ filename  ✗ type
-             not run after the first failure: extension, archive, office, xml, pdf, svg, embedded, image
+             not run after the first failure: extension, archive, xml, office, pdf, svg, embedded, image
                (--all-checks runs every check)
   ✗ type_not_allowed  PHP script files are not allowed.
       detected_type: application/x-httpd-php
