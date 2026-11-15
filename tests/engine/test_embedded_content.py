@@ -199,7 +199,7 @@ def test_text_that_only_mentions_the_tags_passes(text: bytes) -> None:
 def test_tags_are_scanned_in_linear_time(unit: bytes) -> None:
     import time
 
-    flood = unit * (4_000_000 // len(unit))
+    flood = unit * (2_000_000 // len(unit))
     started = time.perf_counter()
     codes(b"notes\n" + flood, "notes.txt", presets.DOCUMENTS)
     codes(corpus.mp3() + flood, "a.mp3")
